@@ -36,6 +36,13 @@ export default async function ServicosPage({ searchParams }: PageProps<"/servico
         titulo="Serviços"
         descricao="Tabela de preços da oficina. Na OS, escolher um serviço preenche o preço."
       >
+        {/* Imprime a tabela com os preços de hoje (respeita a categoria escolhida) */}
+        <Link
+          href={categoria ? `/imprimir/servicos?categoria=${encodeURIComponent(categoria)}` : "/imprimir/servicos"}
+          className={classeBotao.secundario}
+        >
+          Imprimir tabela
+        </Link>
         <Link href="/servicos/novo" className={classeBotao.primario}>
           Novo serviço
         </Link>

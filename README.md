@@ -19,7 +19,8 @@ você entra como gerente, com dados fictícios.
   impressão igual ao bloco, com **2 vias na mesma folha A4** para o cliente assinar.
 - **Tabela de serviços com preço**: código, descrição, preço e categoria, com
   busca e filtro. Na OS, escolher um serviço preenche o preço. A tabela antiga
-  pode ser importada de um CSV (`npm run db:importar-servicos`).
+  pode ser importada de um CSV (`npm run db:importar-servicos`) e impressa
+  para consulta no balcão, sempre com os preços atuais e a data de impressão.
 - **Clientes e veículos**: cadastro com validação (placa antiga e Mercosul),
   histórico de OS por veículo e busca pela URL. Marca, modelo e ano já
   cadastrados viram sugestões, sem repetir a mesma marca com grafias diferentes.
