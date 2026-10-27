@@ -23,7 +23,8 @@ export async function proxy(request: NextRequest) {
   }
 
   // Sem login em página interna → vai para o /login
-  if (!sessao && !naTelaDeLogin) {
+  // (/demo é pública: é ela que faz o login da demonstração)
+  if (!sessao && !naTelaDeLogin && pathname !== "/demo") {
     const url = new URL("/login", request.url);
     if (pathname !== "/") url.searchParams.set("de", pathname + search);
     return NextResponse.redirect(url);
