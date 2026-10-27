@@ -10,6 +10,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node --env-file=.env node_modules/drizzle-kit/bin.cjs migrate",
     "db:seed": "tsx --env-file=.env src/db/seed.ts",
+    "db:limpar": "tsx --env-file=.env src/db/limpar.ts",
     "db:studio": "node --env-file=.env node_modules/drizzle-kit/bin.cjs studio",
     "test": "vitest run",
     "test:watch": "vitest",

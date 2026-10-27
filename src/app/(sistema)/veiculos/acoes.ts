@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { veiculos } from "@/db/schema";
 import { exigirGerente, exigirUsuario } from "@/lib/auth";
+import { registrarNoCatalogo } from "@/lib/dados/catalogo";
 import {
   codigoErroPg,
   errosDoZod,
@@ -33,11 +34,16 @@ export async function criarVeiculo(
 
   let id: number;
   try {
-    const [novo] = await db
-      .insert(veiculos)
-      .values(resultado.data)
-      .returning({ id: veiculos.id });
-    id = novo.id;
+    // Transação: o veículo e o catálogo são gravados juntos (tudo ou nada).
+    // Se a placa for repetida, o registro no catálogo também é desfeito.
+    id = await db.transaction(async (tx) => {
+      const grafia = await registrarNoCatalogo(tx, resultado.data);
+      const [novo] = await tx
+        .insert(veiculos)
+        .values({ ...resultado.data, ...grafia })
+        .returning({ id: veiculos.id });
+      return novo.id;
+    });
   } catch (erro) {
     // 23505 = violou o UNIQUE da placa. O banco é a garantia final:
     // mesmo que dois atendentes cadastrem a mesma placa ao mesmo tempo.
@@ -62,7 +68,13 @@ export async function atualizarVeiculo(
   if (!resultado.success) return errosDoZod(resultado.error, valores);
 
   try {
-    await db.update(veiculos).set(resultado.data).where(eq(veiculos.id, id));
+    await db.transaction(async (tx) => {
+      const grafia = await registrarNoCatalogo(tx, resultado.data);
+      await tx
+        .update(veiculos)
+        .set({ ...resultado.data, ...grafia })
+        .where(eq(veiculos.id, id));
+    });
   } catch (erro) {
     if (codigoErroPg(erro) === "23505") return { ...PLACA_REPETIDA, valores };
     throw erro;

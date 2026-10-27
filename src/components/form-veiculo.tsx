@@ -4,16 +4,19 @@ import Link from "next/link";
 import { useActionState } from "react";
 import { estadoInicial, type EstadoForm } from "@/lib/estado-form";
 import { BotaoEnviar } from "./botao-enviar";
+import { CamposMarcaModelo, type ItemCatalogo } from "./campos-marca-modelo";
 import { Aviso, Campo, Selecao, classeBotao } from "./ui";
 
 type Props = {
   acao: (estado: EstadoForm, formData: FormData) => Promise<EstadoForm>;
   clientes: { id: number; nome: string }[];
+  /** marcas/modelos/anos já cadastrados, para as sugestões */
+  catalogo: ItemCatalogo[];
   inicial?: Record<string, string>;
   voltarPara: string;
 };
 
-export function FormVeiculo({ acao, clientes, inicial = {}, voltarPara }: Props) {
+export function FormVeiculo({ acao, clientes, catalogo, inicial = {}, voltarPara }: Props) {
   const [estado, acaoForm] = useActionState(acao, estadoInicial);
   const v = estado.valores ?? inicial;
   const e = estado.erros ?? {};
@@ -45,9 +48,11 @@ export function FormVeiculo({ acao, clientes, inicial = {}, voltarPara }: Props)
         className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 font-mono text-sm uppercase shadow-sm focus:border-amber-500 focus:ring-2 focus:ring-amber-500/30 focus:outline-none aria-invalid:border-red-500"
         autoComplete="off"
       />
-      <Campo rotulo="Ano" name="ano" inputMode="numeric" defaultValue={v.ano} erros={e.ano} placeholder="2020" />
-      <Campo rotulo="Marca *" name="marca" defaultValue={v.marca} erros={e.marca} placeholder="Scania" />
-      <Campo rotulo="Modelo *" name="modelo" defaultValue={v.modelo} erros={e.modelo} placeholder="R 450" />
+      <CamposMarcaModelo
+        catalogo={catalogo}
+        inicial={{ marca: v.marca, modelo: v.modelo, ano: v.ano }}
+        erros={e}
+      />
 
       <div className="flex flex-wrap items-center gap-3 sm:col-span-2">
         <BotaoEnviar>Salvar veículo</BotaoEnviar>

@@ -8,7 +8,7 @@
 
   O diagrama e as decisões estão em docs/modelo-de-dados.md.
 */
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
   integer,
   numeric,
@@ -16,6 +16,7 @@ import {
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 // Enums viram tipos do PostgreSQL: o banco recusa qualquer valor fora da lista.
@@ -66,6 +67,35 @@ export const veiculos = pgTable("veiculos", {
   ano: integer("ano"),
   criadoEm: criadoEm(),
 });
+
+/*
+  Catálogo de marca/modelo/ano: a "memória" do formulário de veículo.
+  Cada veículo salvo registra aqui a sua combinação, e o formulário passa
+  a sugerir o que já foi digitado antes.
+
+  Fica numa tabela própria (e não só nos veículos) para as sugestões
+  continuarem existindo mesmo se o veículo for excluído.
+
+  O índice único usa lower(): "Scania", "SCANIA" e "scania" contam como a
+  MESMA marca. coalesce(ano, 0) porque no SQL um NULL nunca é "igual" a
+  outro NULL, e sem isso daria para repetir "Scania R 450" sem ano.
+*/
+export const catalogoVeiculos = pgTable(
+  "catalogo_veiculos",
+  {
+    id: id(),
+    marca: text("marca").notNull(),
+    modelo: text("modelo").notNull(),
+    ano: integer("ano"),
+  },
+  (t) => [
+    uniqueIndex("catalogo_veiculos_unico").on(
+      sql`lower(${t.marca})`,
+      sql`lower(${t.modelo})`,
+      sql`coalesce(${t.ano}, 0)`,
+    ),
+  ],
+);
 
 export const ordensServico = pgTable("ordens_servico", {
   id: id(), // também serve como número da OS

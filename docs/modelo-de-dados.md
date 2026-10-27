@@ -43,6 +43,12 @@ erDiagram
         timestamp aberta_em
         timestamp entregue_em
     }
+    CATALOGO_VEICULOS {
+        int id PK
+        text marca
+        text modelo
+        int ano
+    }
     ITENS_OS {
         int id PK
         int ordem_id FK
@@ -72,6 +78,7 @@ erDiagram
 | `total_centavos` **guardado** na OS | Poderia ser calculado sempre a partir dos itens, mas guardar deixa as listas e o painel rápidos. Ele é recalculado **no servidor**, dentro de uma transação, toda vez que os itens mudam. |
 | Status como **enum** | O banco só aceita os 4 valores válidos. Um erro de digitação como "pronto" é barrado pelo próprio PostgreSQL. |
 | Excluir com **restrict** | Não dá para excluir um cliente que tem veículos, nem um veículo que tem OS. Isso protege o histórico da oficina. Os itens são apagados junto com a OS (**cascade**), porque não fazem sentido sozinhos. |
+| **Catálogo** de marca/modelo/ano separado | Alimenta as sugestões do formulário de veículo e continua existindo mesmo se o veículo for excluído. O índice único usa `lower()`, então "Scania" e "SCANIA" contam como a mesma marca, e o veículo é gravado com a grafia que já existia. |
 | Placa **única** | Duas fichas para o mesmo caminhão causariam confusão no histórico. |
 
 ## Fluxo de status da OS

@@ -16,7 +16,8 @@ você entra como gerente, com dados fictícios.
   serviços com prévia do total em tempo real, fluxo de status
   (Aberta → Em andamento → Pronta → Entregue) e impressão em A4.
 - **Clientes e veículos**: cadastro com validação (placa antiga e Mercosul),
-  histórico de OS por veículo e busca pela URL.
+  histórico de OS por veículo e busca pela URL. Marca, modelo e ano já
+  cadastrados viram sugestões, sem repetir a mesma marca com grafias diferentes.
 - **Painel do mês**: OS por status, faturamento do mês, serviços mais feitos e a
   fila da oficina (o que está parado há mais tempo).
 - **Login com papéis**: *gerente* (tudo, inclusive excluir, ver o faturamento e
@@ -93,6 +94,7 @@ Abra http://localhost:3000 e entre com `gerente@oficina.dev` / `demo1234`
 | `npm run db:generate` | Gera uma migration depois de mudar `src/db/schema.ts` |
 | `npm run db:migrate` | Aplica as migrations no banco do `.env` |
 | `npm run db:seed -- --sim` | Apaga tudo e insere os dados de exemplo |
+| `npm run db:limpar -- --sim` | Apaga clientes, veículos e OS, mantendo os usuários |
 | `npm run db:studio` | Abre o Drizzle Studio para ver as tabelas |
 
 ## Deploy

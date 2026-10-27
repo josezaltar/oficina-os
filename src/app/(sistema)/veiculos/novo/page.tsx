@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { FormVeiculo } from "@/components/form-veiculo";
 import { Cabecalho, Cartao, EstadoVazio } from "@/components/ui";
 import { primeiroValor } from "@/lib/dados/busca";
+import { listarCatalogo } from "@/lib/dados/catalogo";
 import { opcoesClientes } from "@/lib/dados/clientes";
 import { criarVeiculo } from "../acoes";
 
@@ -13,7 +14,8 @@ export default async function NovoVeiculoPage({
   searchParams,
 }: PageProps<"/veiculos/novo">) {
   const clienteId = primeiroValor((await searchParams).clienteId) ?? "";
-  const clientes = await opcoesClientes();
+  // Promise.all: as duas consultas rodam ao mesmo tempo
+  const [clientes, catalogo] = await Promise.all([opcoesClientes(), listarCatalogo()]);
 
   return (
     <div>
@@ -27,6 +29,7 @@ export default async function NovoVeiculoPage({
           <FormVeiculo
             acao={criarVeiculo}
             clientes={clientes}
+            catalogo={catalogo}
             inicial={{ clienteId }}
             voltarPara={clienteId ? `/clientes/${clienteId}` : "/veiculos"}
           />

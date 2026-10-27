@@ -21,6 +21,7 @@ const {
   usuarios,
   clientes,
   veiculos,
+  catalogoVeiculos,
   ordensServico,
   itensOs,
 } = schema;
@@ -45,7 +46,7 @@ async function main() {
   console.log("Limpando tabelas...");
   // RESTART IDENTITY zera os contadores de id (a OS volta a começar em 1).
   await db.execute(
-    sql`TRUNCATE itens_os, ordens_servico, veiculos, clientes, usuarios RESTART IDENTITY CASCADE`,
+    sql`TRUNCATE itens_os, ordens_servico, veiculos, catalogo_veiculos, clientes, usuarios RESTART IDENTITY CASCADE`,
   );
 
   console.log("Criando usuários...");
@@ -101,6 +102,12 @@ async function main() {
       { clienteId: c(7), placa: "CHZ0K10", marca: "Mercedes-Benz", modelo: "Sprinter 416", ano: 2021 },
     ])
     .returning();
+
+  // O catálogo de sugestões começa com as marcas/modelos dos veículos de exemplo
+  await db
+    .insert(catalogoVeiculos)
+    .values(listaVeiculos.map(({ marca, modelo, ano }) => ({ marca, modelo, ano })))
+    .onConflictDoNothing();
 
   const v = (i: number) => listaVeiculos[i].id;
 

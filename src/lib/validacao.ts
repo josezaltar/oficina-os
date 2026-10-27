@@ -55,6 +55,8 @@ export type DadosCliente = z.infer<typeof esquemaCliente>;
 
 // ---------------------------------------------------------------- veículos
 
+const juntarEspacos = (texto: string) => texto.replace(/\s+/g, " ");
+
 // Aceita placa antiga (ABC1234) e Mercosul (ABC1D23).
 export const REGEX_PLACA = /^[A-Z]{3}\d[A-Z0-9]\d{2}$/;
 
@@ -71,8 +73,10 @@ export const esquemaVeiculo = z.object({
         error: "Placa inválida. Use o formato ABC1D23 ou ABC1234.",
       }),
     ),
-  marca: textoObrigatorio("Informe a marca."),
-  modelo: textoObrigatorio("Informe o modelo."),
+  // " scania   R  450 " → "scania R 450": espaços repetidos não criam
+  // uma marca "diferente" no catálogo
+  marca: textoObrigatorio("Informe a marca.").transform(juntarEspacos),
+  modelo: textoObrigatorio("Informe o modelo.").transform(juntarEspacos),
   ano: inteiroOpcional(1950, 2100, "Ano inválido."),
 });
 
