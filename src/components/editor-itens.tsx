@@ -12,6 +12,7 @@
   Ao salvar, tudo volta para o servidor, que valida e recalcula o total.
 */
 import { useActionState } from "react";
+import type { ServicoSugestao } from "@/lib/dados/catalogo";
 import type { EstadoForm } from "@/lib/estado-form";
 import { BotaoEnviar } from "./botao-enviar";
 import { LinhasItens, type ItemSalvo } from "./linhas-itens";
@@ -24,7 +25,7 @@ export function EditorItens({
 }: {
   acao: (estado: EstadoForm, formData: FormData) => Promise<EstadoForm>;
   itens: ItemSalvo[];
-  sugestoes: string[];
+  sugestoes: ServicoSugestao[];
 }) {
   const [estado, acaoForm] = useActionState(acao, {});
 

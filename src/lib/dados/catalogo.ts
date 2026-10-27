@@ -62,38 +62,53 @@ export async function registrarNoCatalogo(tx: Transacao, item: ItemCatalogo) {
   return { marca, modelo };
 }
 
-// ------------------------------------------------- descrições de serviço
+// ------------------------------------------------- serviços (tabela de preços)
 
-/** Todas as descrições já usadas, para as sugestões da tabela de itens. */
-export async function listarServicos(): Promise<string[]> {
+export type ServicoSugestao = {
+  descricao: string;
+  precoCentavos: number | null;
+  referencia: string | null;
+  categoria: string | null;
+};
+
+/** Todos os serviços cadastrados, para as sugestões da tabela de itens da OS. */
+export async function listarServicos(): Promise<ServicoSugestao[]> {
   await exigirUsuario();
-  const linhas = await db
-    .select({ descricao: catalogoServicos.descricao })
+  return db
+    .select({
+      descricao: catalogoServicos.descricao,
+      precoCentavos: catalogoServicos.precoCentavos,
+      referencia: catalogoServicos.referencia,
+      categoria: catalogoServicos.categoria,
+    })
     .from(catalogoServicos)
     .orderBy(asc(catalogoServicos.descricao));
-  return linhas.map((l) => l.descricao);
 }
 
 /**
- * Registra as descrições no catálogo e devolve cada uma com a grafia que já
- * existia ("troca de óleo" → "Troca de óleo"), na mesma ordem recebida.
+ * Registra as descrições usadas numa OS e devolve cada uma com a grafia que
+ * já existia ("troca de óleo" → "TROCA DE ÓLEO"), na mesma ordem recebida.
+ * Descrição nova entra no cadastro com o preço usado nesta OS.
  */
-export async function registrarServicos(tx: Transacao, descricoes: string[]) {
-  if (descricoes.length === 0) return [];
+export async function registrarServicos(
+  tx: Transacao,
+  itens: { descricao: string; valorUnitarioCentavos: number }[],
+) {
+  if (itens.length === 0) return [];
 
   // 1. grava as novas; as que já existem são ignoradas pelo índice único
   await tx
     .insert(catalogoServicos)
-    .values(descricoes.map((descricao) => ({ descricao })))
+    .values(itens.map((i) => ({ descricao: i.descricao, precoCentavos: i.valorUnitarioCentavos })))
     .onConflictDoNothing();
 
   // 2. busca a grafia oficial de todas elas
-  const minusculas = [...new Set(descricoes.map((d) => d.toLowerCase()))];
+  const minusculas = [...new Set(itens.map((i) => i.descricao.toLowerCase()))];
   const existentes = await tx
     .select({ descricao: catalogoServicos.descricao })
     .from(catalogoServicos)
     .where(inArray(sql`lower(${catalogoServicos.descricao})`, minusculas));
   const oficial = new Map(existentes.map((e) => [e.descricao.toLowerCase(), e.descricao]));
 
-  return descricoes.map((d) => oficial.get(d.toLowerCase()) ?? d);
+  return itens.map((i) => oficial.get(i.descricao.toLowerCase()) ?? i.descricao);
 }

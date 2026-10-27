@@ -14,6 +14,7 @@ const links = [
   { href: "/ordens", rotulo: "Ordens de serviço" },
   { href: "/clientes", rotulo: "Clientes" },
   { href: "/veiculos", rotulo: "Veículos" },
+  { href: "/servicos", rotulo: "Serviços" },
 ];
 
 /**

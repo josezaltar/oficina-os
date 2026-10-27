@@ -140,7 +140,7 @@ type Transacao = Parameters<Parameters<typeof db.transaction>[0]>[0];
  */
 async function gravarItens(tx: Transacao, ordemId: number, itens: DadosItem[]) {
   if (itens.length === 0) return;
-  const descricoes = await registrarServicos(tx, itens.map((i) => i.descricao));
+  const descricoes = await registrarServicos(tx, itens);
   await tx
     .insert(itensOs)
     .values(itens.map((item, i) => ({ ...item, descricao: descricoes[i], ordemId })));

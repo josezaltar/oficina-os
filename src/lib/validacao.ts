@@ -155,6 +155,29 @@ export const esquemaItem = z.object({
     ),
 });
 
+// ------------------------------------------------- serviços (tabela de preços)
+
+export const esquemaServico = z.object({
+  referencia: textoOpcional.pipe(z.string().max(20, { error: "Código muito longo." }).nullable()),
+  descricao: textoObrigatorio("Informe a descrição do serviço.").transform((t) => t.replace(/\s+/g, " ")),
+  // Preço opcional: "" vira null (serviço sem preço fixo)
+  preco: z
+    .string()
+    .trim()
+    .transform((v, ctx) => {
+      if (v === "") return null;
+      const centavos = lerMoedaEmCentavos(v);
+      if (Number.isNaN(centavos) || centavos < 0 || centavos > 100_000_000) {
+        ctx.addIssue({ code: "custom", message: "Preço inválido. Use o formato 1.234,56." });
+        return z.NEVER;
+      }
+      return centavos;
+    }),
+  categoria: textoOpcional.transform((v) => (v ? v.toUpperCase() : null)),
+});
+
+export type DadosServico = z.infer<typeof esquemaServico>;
+
 export const esquemaItens = z
   .array(esquemaItem)
   .max(100, { error: "Máximo de 100 itens por OS." });

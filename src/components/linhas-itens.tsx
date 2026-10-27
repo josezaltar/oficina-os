@@ -13,11 +13,14 @@
   linha vazia sem dar erro.
 
   A oficina lança só SERVIÇOS: o tipo vai escondido como "servico".
-  As descrições já usadas aparecem como sugestão (<datalist>) enquanto se
-  digita; ao salvar, as novas entram no catálogo, sem repetir.
+  Os serviços cadastrados (área Serviços) aparecem como sugestão
+  (<datalist>) enquanto se digita, com o código e o preço ao lado.
+  Escolher um serviço preenche o Preço Unit. (se ainda estiver vazio).
+  Ao salvar, descrições novas entram no cadastro, sem repetir.
 */
 import { useState } from "react";
 import type { TipoItem } from "@/db/schema";
+import type { ServicoSugestao } from "@/lib/dados/catalogo";
 import {
   centavosParaCampo,
   formatarMoeda,
@@ -76,8 +79,8 @@ export function LinhasItens({
   sugestoes = [],
 }: {
   itens?: ItemSalvo[];
-  /** descrições já usadas em outras OS */
-  sugestoes?: string[];
+  /** serviços cadastrados, com preço de tabela */
+  sugestoes?: ServicoSugestao[];
   /** quantas linhas em branco mostrar no começo (como as linhas do papel) */
   linhasVazias?: number;
   /** erros do servidor, no formato "2.descricao" (linha enviada nº 2) */
@@ -98,6 +101,28 @@ export function LinhasItens({
   // Atualiza um campo de uma linha sem mexer nas outras (imutabilidade)
   function alterar(chave: string, campo: keyof Linha, valor: string) {
     setLinhas((atuais) => atuais.map((l) => (l.chave === chave ? { ...l, [campo]: valor } : l)));
+  }
+
+  // Busca rápida do serviço pela descrição (sem diferenciar maiúsculas)
+  const porDescricao = new Map(sugestoes.map((s) => [s.descricao.toLowerCase(), s]));
+
+  /** Mudou a descrição: se é um serviço cadastrado com preço, preenche o preço. */
+  function alterarDescricao(chave: string, descricao: string) {
+    const servico = porDescricao.get(descricao.trim().toLowerCase());
+    setLinhas((atuais) =>
+      atuais.map((l) => {
+        if (l.chave !== chave) return l;
+        const precoVazio = l.valor.trim() === "";
+        return {
+          ...l,
+          descricao,
+          valor:
+            servico?.precoCentavos != null && precoVazio
+              ? centavosParaCampo(servico.precoCentavos)
+              : l.valor,
+        };
+      }),
+    );
   }
 
   function remover(chave: string) {
@@ -160,7 +185,7 @@ export function LinhasItens({
                       autoComplete="off"
                       aria-label={`Descrição do item ${n}`}
                       value={linha.descricao}
-                      onChange={(e) => alterar(linha.chave, "descricao", e.target.value)}
+                      onChange={(e) => alterarDescricao(linha.chave, e.target.value)}
                       aria-invalid={erro("descricao") ? true : undefined}
                       className={classeEntrada}
                       placeholder="Ex.: Regulagem de freio"
@@ -218,8 +243,19 @@ export function LinhasItens({
       </p>
 
       <datalist id="sugestoes-servico">
-        {sugestoes.map((d) => (
-          <option key={d} value={d} />
+        {sugestoes.map((s) => (
+          // label: aparece ao lado da descrição na lista (código, preço, categoria)
+          <option
+            key={s.descricao}
+            value={s.descricao}
+            label={[
+              s.referencia,
+              s.precoCentavos != null ? formatarMoeda(s.precoCentavos) : null,
+              s.categoria,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+          />
         ))}
       </datalist>
 

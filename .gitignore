@@ -44,3 +44,6 @@ next-env.d.ts
 # testes
 /test-results/
 /playwright-report/
+
+# tabela de preços e outros dados da oficina: NÃO vão para o GitHub (repositório público)
+/dados-privados/

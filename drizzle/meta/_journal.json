@@ -29,6 +29,13 @@
       "when": 1793119012476,
       "tag": "0003_catalogo_servicos",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793120868637,
+      "tag": "0004_tabela_de_servicos",
+      "breakpoints": true
     }
   ]
 }

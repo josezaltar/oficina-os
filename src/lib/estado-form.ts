@@ -57,3 +57,14 @@ export function codigoErroPg(erro: unknown): string | undefined {
   }
   return undefined;
 }
+
+/** Nome da restrição do banco que barrou a gravação (ex.: "catalogo_servicos_unico"). */
+export function restricaoErroPg(erro: unknown): string | undefined {
+  const candidatos = [erro, (erro as { cause?: unknown })?.cause];
+  for (const c of candidatos) {
+    if (c && typeof c === "object" && "constraint_name" in c && typeof c.constraint_name === "string") {
+      return c.constraint_name;
+    }
+  }
+  return undefined;
+}

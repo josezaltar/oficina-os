@@ -103,16 +103,25 @@ export const catalogoVeiculos = pgTable(
 );
 
 /*
-  Catálogo de descrições de serviço: cada descrição usada numa OS fica
-  salva aqui e vira sugestão nas próximas. Mesmo esquema do catálogo de
-  veículos: lower() no índice único, para "Troca de óleo" e "TROCA DE ÓLEO"
-  serem a mesma descrição.
+  Cadastro de serviços da oficina (a "tabela de preços").
+  - Cadastrados na área Serviços, ou importados da tabela antiga
+    (npm run db:importar-servicos).
+  - Uma descrição nova digitada numa OS também entra aqui, com o preço usado.
+  Na OS, escolher a descrição preenche o preço unitário.
+
+  lower() no índice único: "Troca de óleo" e "TROCA DE ÓLEO" são a mesma
+  descrição, então não existem duas iguais.
 */
 export const catalogoServicos = pgTable(
   "catalogo_servicos",
   {
     id: id(),
+    // Código do sistema antigo (ex.: "00145"); opcional e único
+    referencia: text("referencia").unique(),
     descricao: text("descricao").notNull(),
+    // Preço de tabela em centavos; null = sem preço definido
+    precoCentavos: integer("preco_centavos"),
+    categoria: text("categoria"), // ex.: MOTOR, CAIXA, RODA
   },
   (t) => [uniqueIndex("catalogo_servicos_unico").on(sql`lower(${t.descricao})`)],
 );

@@ -19,6 +19,7 @@
 import Link from "next/link";
 import { useActionState, useRef, useState, useTransition, type ReactNode } from "react";
 import type { DadosDaPlaca, ClienteSugestao } from "@/lib/dados/bloco";
+import type { ServicoSugestao } from "@/lib/dados/catalogo";
 import type { EstadoForm } from "@/lib/estado-form";
 import { normalizarPlaca } from "@/lib/formato";
 import { BotaoEnviar } from "./botao-enviar";
@@ -89,7 +90,7 @@ export function FormOrdem({
     cidades: string[];
     tipos: string[];
     catalogo: ItemCatalogo[];
-    servicos: string[];
+    servicos: ServicoSugestao[];
   };
 }) {
   const [estado, acaoForm] = useActionState(acao, {});
