@@ -100,11 +100,7 @@ export default async function ServicosPage({ searchParams }: PageProps<"/servico
         </nav>
       )}
 
-      <FormBusca action="/servicos" valor={busca} placeholder="Descrição ou código">
-        {categoria && <input type="hidden" name="categoria" value={categoria} />}
-        {ordenarPor !== "descricao" && <input type="hidden" name="ordenar" value={ordenarPor} />}
-        {direcao === "desc" && <input type="hidden" name="dir" value="desc" />}
-      </FormBusca>
+      <FormBusca action="/servicos" valor={busca} placeholder="Descrição ou código" />
 
       {lista.length === 0 ? (
         <EstadoVazio acao={busca || categoria ? undefined : { href: "/servicos/novo", rotulo: "Cadastrar o primeiro serviço" }}>

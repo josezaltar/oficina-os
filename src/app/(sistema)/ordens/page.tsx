@@ -59,10 +59,7 @@ export default async function OrdensPage({ searchParams }: PageProps<"/ordens">)
         })}
       </nav>
 
-      <FormBusca action="/ordens" valor={busca} placeholder="Nº da OS, placa ou cliente">
-        {/* Campo escondido: a busca mantém o filtro de status escolhido */}
-        {status && <input type="hidden" name="status" value={status} />}
-      </FormBusca>
+      <FormBusca action="/ordens" valor={busca} placeholder="Nº da OS, placa ou cliente" />
 
       {lista.length === 0 ? (
         <EstadoVazio
