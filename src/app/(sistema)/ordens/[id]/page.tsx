@@ -6,6 +6,7 @@ import { ControleStatus } from "@/components/controle-status";
 import { EditorItens } from "@/components/editor-itens";
 import { Cabecalho, Cartao, EtiquetaStatus, Tabela, classeBotao } from "@/components/ui";
 import { exigirUsuario } from "@/lib/auth";
+import { listarServicos } from "@/lib/dados/catalogo";
 import { lerId } from "@/lib/dados/id";
 import { buscarOrdem, cabecalhoDaOrdem } from "@/lib/dados/ordens";
 import {
@@ -26,7 +27,7 @@ export const metadata: Metadata = { title: "Ordem de serviço" };
 */
 export default async function OrdemPage({ params }: PageProps<"/ordens/[id]">) {
   const id = lerId((await params).id);
-  const ordem = await buscarOrdem(id);
+  const [ordem, servicos] = await Promise.all([buscarOrdem(id), listarServicos()]);
   if (!ordem) notFound();
   const usuario = await exigirUsuario();
 
@@ -96,9 +97,9 @@ export default async function OrdemPage({ params }: PageProps<"/ordens/[id]">) {
         <ControleStatus status={ordem.status} acao={mudarStatus.bind(null, id)} />
       </Cartao>
 
-      <Cartao titulo="Peças e serviços">
+      <Cartao titulo="Serviços">
         {editavel ? (
-          <EditorItens acao={salvarItens.bind(null, id)} itens={ordem.itens} />
+          <EditorItens acao={salvarItens.bind(null, id)} itens={ordem.itens} sugestoes={servicos} />
         ) : (
           <ItensSomenteLeitura itens={ordem.itens} totalCentavos={ordem.totalCentavos} />
         )}
@@ -128,7 +129,6 @@ function ItensSomenteLeitura({
             <th>Descrição</th>
             <th className="text-right">Preço Unit.</th>
             <th className="text-right">Total</th>
-            <th className="text-xs font-medium text-slate-500">Tipo</th>
           </tr>
         </thead>
         <tbody>
@@ -142,7 +142,6 @@ function ItensSomenteLeitura({
               <td className="text-right whitespace-nowrap">
                 {formatarMoeda(subtotalCentavos(item))}
               </td>
-              <td className="text-xs text-slate-500">{item.tipo === "peca" ? "Peça" : "Serviço"}</td>
             </tr>
           ))}
         </tbody>
@@ -154,7 +153,6 @@ function ItensSomenteLeitura({
             <td className="text-right whitespace-nowrap" data-testid="total-os">
               {formatarMoeda(totalCentavos)}
             </td>
-            <td />
           </tr>
         </tfoot>
       </Tabela>

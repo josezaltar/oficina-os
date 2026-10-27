@@ -20,15 +20,22 @@ import { Aviso } from "./ui";
 export function EditorItens({
   acao,
   itens,
+  sugestoes,
 }: {
   acao: (estado: EstadoForm, formData: FormData) => Promise<EstadoForm>;
   itens: ItemSalvo[];
+  sugestoes: string[];
 }) {
   const [estado, acaoForm] = useActionState(acao, {});
 
   return (
     <form action={acaoForm}>
-      <LinhasItens itens={itens} linhasVazias={itens.length === 0 ? 1 : 0} erros={estado.erros} />
+      <LinhasItens
+        itens={itens}
+        linhasVazias={itens.length === 0 ? 1 : 0}
+        erros={estado.erros}
+        sugestoes={sugestoes}
+      />
       <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-slate-200 pt-4">
         <BotaoEnviar>Salvar itens</BotaoEnviar>
         <Aviso mensagem={estado.mensagem} sucesso={estado.sucesso} />

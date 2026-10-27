@@ -15,7 +15,7 @@ import { db } from "@/db";
 import { clientes, itensOs, ordensServico, statusOsEnum, veiculos } from "@/db/schema";
 import { exigirGerente, exigirUsuario } from "@/lib/auth";
 import { dadosPorPlaca, type DadosDaPlaca } from "@/lib/dados/bloco";
-import { registrarNoCatalogo } from "@/lib/dados/catalogo";
+import { registrarNoCatalogo, registrarServicos } from "@/lib/dados/catalogo";
 import { errosDoZod, lerCampos, type EstadoForm } from "@/lib/estado-form";
 import { hojeEmSaoPaulo, normalizarPlaca } from "@/lib/formato";
 import {
@@ -25,7 +25,7 @@ import {
   podeExcluirOs,
   podeMudarStatus,
 } from "@/lib/regras-os";
-import { REGEX_PLACA, esquemaItens, esquemaOrdem } from "@/lib/validacao";
+import { REGEX_PLACA, esquemaItens, esquemaOrdem, type DadosItem } from "@/lib/validacao";
 
 /** Erro de regra de negócio: a mensagem pode ser mostrada para a pessoa. */
 class ErroRegra extends Error {}
@@ -122,9 +122,7 @@ export async function criarOrdem(
       })
       .returning({ id: ordensServico.id });
 
-    if (itens.data.length > 0) {
-      await tx.insert(itensOs).values(itens.data.map((item) => ({ ...item, ordemId: nova.id })));
-    }
+    await gravarItens(tx, nova.id, itens.data);
     return nova.id;
   });
 
@@ -135,6 +133,18 @@ export async function criarOrdem(
 }
 
 type Transacao = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+/**
+ * Grava os itens da OS e registra cada descrição no catálogo de serviços
+ * (sem repetir). A descrição é gravada com a grafia que já existia.
+ */
+async function gravarItens(tx: Transacao, ordemId: number, itens: DadosItem[]) {
+  if (itens.length === 0) return;
+  const descricoes = await registrarServicos(tx, itens.map((i) => i.descricao));
+  await tx
+    .insert(itensOs)
+    .values(itens.map((item, i) => ({ ...item, descricao: descricoes[i], ordemId })));
+}
 
 /** Cliente dono de um veículo novo: reaproveita pelo nome ou cadastra. */
 async function clienteParaPlacaNova(
@@ -184,7 +194,7 @@ function lerItens(formData: FormData) {
   const quantidades = formData.getAll("quantidade");
   const valores = formData.getAll("valor");
   return tipos.map((tipo, i) => ({
-    tipo: String(tipo),
+    tipo: String(tipo || "servico"),
     descricao: String(descricoes[i] ?? ""),
     quantidade: String(quantidades[i] ?? ""),
     valorUnitarioCentavos: String(valores[i] ?? ""),
@@ -225,9 +235,7 @@ export async function salvarItens(
       }
 
       await tx.delete(itensOs).where(eq(itensOs.ordemId, id));
-      if (itens.length > 0) {
-        await tx.insert(itensOs).values(itens.map((item) => ({ ...item, ordemId: id })));
-      }
+      await gravarItens(tx, id, itens);
 
       // O total é SEMPRE calculado aqui no servidor. O valor que o navegador
       // mostra é só uma prévia: ninguém consegue "mandar" um total falso.

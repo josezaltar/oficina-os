@@ -22,6 +22,7 @@ const {
   clientes,
   veiculos,
   catalogoVeiculos,
+  catalogoServicos,
   ordensServico,
   itensOs,
 } = schema;
@@ -46,7 +47,7 @@ async function main() {
   console.log("Limpando tabelas...");
   // RESTART IDENTITY zera os contadores de id (a OS volta a começar em 1).
   await db.execute(
-    sql`TRUNCATE itens_os, ordens_servico, veiculos, catalogo_veiculos, clientes, usuarios RESTART IDENTITY CASCADE`,
+    sql`TRUNCATE itens_os, ordens_servico, veiculos, catalogo_veiculos, catalogo_servicos, clientes, usuarios RESTART IDENTITY CASCADE`,
   );
 
   console.log("Criando usuários...");
@@ -127,8 +128,8 @@ async function main() {
       descricaoProblema: "Revisão dos 400 mil km",
       itens: [
         { tipo: "servico", descricao: "Troca de óleo do motor", quantidade: 1, valorUnitarioCentavos: 18000 },
-        { tipo: "peca", descricao: "Óleo 15W40 (litro)", quantidade: 32, valorUnitarioCentavos: 3290 },
-        { tipo: "peca", descricao: "Filtro de óleo", quantidade: 2, valorUnitarioCentavos: 14500 },
+        { tipo: "servico", descricao: "Óleo 15W40 (litro)", quantidade: 32, valorUnitarioCentavos: 3290 },
+        { tipo: "servico", descricao: "Filtro de óleo", quantidade: 2, valorUnitarioCentavos: 14500 },
         { tipo: "servico", descricao: "Regulagem de válvulas", quantidade: 1, valorUnitarioCentavos: 65000 },
       ],
     },
@@ -137,8 +138,8 @@ async function main() {
       descricaoProblema: "Motor falhando e fumaça preta",
       itens: [
         { tipo: "servico", descricao: "Limpeza de bicos injetores", quantidade: 1, valorUnitarioCentavos: 48000 },
-        { tipo: "peca", descricao: "Bico injetor", quantidade: 2, valorUnitarioCentavos: 112000 },
-        { tipo: "peca", descricao: "Filtro de combustível", quantidade: 1, valorUnitarioCentavos: 9800 },
+        { tipo: "servico", descricao: "Bico injetor", quantidade: 2, valorUnitarioCentavos: 112000 },
+        { tipo: "servico", descricao: "Filtro de combustível", quantidade: 1, valorUnitarioCentavos: 9800 },
       ],
     },
     {
@@ -146,9 +147,9 @@ async function main() {
       descricaoProblema: "Revisão preventiva",
       itens: [
         { tipo: "servico", descricao: "Troca de óleo do motor", quantidade: 1, valorUnitarioCentavos: 9000 },
-        { tipo: "peca", descricao: "Óleo 5W30 (litro)", quantidade: 7.5, valorUnitarioCentavos: 4590 },
-        { tipo: "peca", descricao: "Filtro de óleo", quantidade: 1, valorUnitarioCentavos: 6200 },
-        { tipo: "peca", descricao: "Filtro de ar", quantidade: 1, valorUnitarioCentavos: 11900 },
+        { tipo: "servico", descricao: "Óleo 5W30 (litro)", quantidade: 7.5, valorUnitarioCentavos: 4590 },
+        { tipo: "servico", descricao: "Filtro de óleo", quantidade: 1, valorUnitarioCentavos: 6200 },
+        { tipo: "servico", descricao: "Filtro de ar", quantidade: 1, valorUnitarioCentavos: 11900 },
       ],
     },
     {
@@ -156,7 +157,7 @@ async function main() {
       descricaoProblema: "Embreagem patinando",
       itens: [
         { tipo: "servico", descricao: "Troca de embreagem", quantidade: 1, valorUnitarioCentavos: 120000 },
-        { tipo: "peca", descricao: "Kit de embreagem", quantidade: 1, valorUnitarioCentavos: 389000 },
+        { tipo: "servico", descricao: "Kit de embreagem", quantidade: 1, valorUnitarioCentavos: 389000 },
       ],
     },
     {
@@ -172,7 +173,7 @@ async function main() {
       descricaoProblema: "Barulho na suspensão dianteira",
       itens: [
         { tipo: "servico", descricao: "Troca de buchas da suspensão", quantidade: 1, valorUnitarioCentavos: 38000 },
-        { tipo: "peca", descricao: "Bucha do feixe de mola", quantidade: 4, valorUnitarioCentavos: 8700 },
+        { tipo: "servico", descricao: "Bucha do feixe de mola", quantidade: 4, valorUnitarioCentavos: 8700 },
       ],
     },
     {
@@ -222,6 +223,13 @@ async function main() {
         .values(o.itens.map((item) => ({ ...item, ordemId: ordem.id })));
     }
   }
+
+  // Catálogo de descrições: todas as usadas nas OS de exemplo, sem repetir
+  const descricoes = [...new Set(ordens.flatMap((o) => o.itens.map((i) => i.descricao)))];
+  await db
+    .insert(catalogoServicos)
+    .values(descricoes.map((descricao) => ({ descricao })))
+    .onConflictDoNothing();
 
   console.log("Pronto! Login: gerente@oficina.dev / " + SENHA_DEMO);
   await conexao.end();

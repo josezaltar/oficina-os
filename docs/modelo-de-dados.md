@@ -56,6 +56,10 @@ erDiagram
         text modelo
         int ano
     }
+    CATALOGO_SERVICOS {
+        int id PK
+        text descricao
+    }
     ITENS_OS {
         int id PK
         int ordem_id FK
@@ -88,6 +92,7 @@ erDiagram
 | **Catálogo** de marca/modelo/ano separado | Alimenta as sugestões do formulário de veículo e continua existindo mesmo se o veículo for excluído. O índice único usa `lower()`, então "Scania" e "SCANIA" contam como a mesma marca, e o veículo é gravado com a grafia que já existia. |
 | OS guarda a **cópia do cabeçalho** (nome, tel, cidade, CEP, nº, placa, marca, modelo, tipo) | Igual ao bloco de papel: a OS mostra o que foi escrito nela. Se o atendente mudar o telefone só para esta OS, o cadastro do cliente continua como estava. |
 | **Placa nova** cadastra cliente e veículo | Ao abrir a OS com uma placa que o sistema não conhece, o veículo é cadastrado. O cliente é reaproveitado se já existir um com o mesmo nome (dono de frota); senão, é cadastrado também. Tudo numa transação. |
+| **Catálogo de serviços** | Cada descrição usada numa OS fica salva e vira sugestão nas próximas. Sem repetir: "TROCA DE ÓLEO" é gravada como "Troca de óleo" se essa grafia já existir. A oficina lança só serviços, então o tipo de cada item é sempre "serviço". |
 | Placa **única** | Duas fichas para o mesmo caminhão causariam confusão no histórico. |
 
 ## Fluxo de status da OS

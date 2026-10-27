@@ -102,6 +102,21 @@ export const catalogoVeiculos = pgTable(
   ],
 );
 
+/*
+  Catálogo de descrições de serviço: cada descrição usada numa OS fica
+  salva aqui e vira sugestão nas próximas. Mesmo esquema do catálogo de
+  veículos: lower() no índice único, para "Troca de óleo" e "TROCA DE ÓLEO"
+  serem a mesma descrição.
+*/
+export const catalogoServicos = pgTable(
+  "catalogo_servicos",
+  {
+    id: id(),
+    descricao: text("descricao").notNull(),
+  },
+  (t) => [uniqueIndex("catalogo_servicos_unico").on(sql`lower(${t.descricao})`)],
+);
+
 export const ordensServico = pgTable("ordens_servico", {
   id: id(), // também serve como número da OS
   veiculoId: integer("veiculo_id")

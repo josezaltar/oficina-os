@@ -7,7 +7,7 @@ import { db } from "@/db";
 import { clientes, veiculos } from "@/db/schema";
 import { exigirUsuario } from "@/lib/auth";
 import { normalizarPlaca } from "@/lib/formato";
-import { listarCatalogo } from "./catalogo";
+import { listarCatalogo, listarServicos } from "./catalogo";
 
 /** O que a busca pela placa devolve para preencher o bloco. */
 export type DadosDaPlaca = {
@@ -64,7 +64,7 @@ export type ClienteSugestao = {
  */
 export async function sugestoesDoBloco() {
   await exigirUsuario();
-  const [listaClientes, cidades, tipos, catalogo] = await Promise.all([
+  const [listaClientes, cidades, tipos, catalogo, servicos] = await Promise.all([
     db
       .select({
         id: clientes.id,
@@ -87,6 +87,7 @@ export async function sugestoesDoBloco() {
       .where(isNotNull(veiculos.tipo))
       .orderBy(asc(veiculos.tipo)),
     listarCatalogo(),
+    listarServicos(),
   ]);
 
   return {
@@ -94,5 +95,6 @@ export async function sugestoesDoBloco() {
     cidades: cidades.map((c) => c.valor!),
     tipos: tipos.map((t) => t.valor!),
     catalogo,
+    servicos,
   };
 }

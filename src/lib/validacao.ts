@@ -132,7 +132,8 @@ export type DadosOrdem = z.infer<typeof esquemaOrdem>;
 
 export const esquemaItem = z.object({
   tipo: z.enum(["peca", "servico"], { error: "Tipo inválido." }),
-  descricao: textoObrigatorio("Descreva o item."),
+  // espaços repetidos não criam uma descrição "diferente" no catálogo
+  descricao: textoObrigatorio("Descreva o serviço.").transform((t) => t.replace(/\s+/g, " ")),
   quantidade: z
     .string()
     .transform(lerNumeroBr)

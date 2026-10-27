@@ -1,7 +1,7 @@
 /*
   Limpeza: apaga TODOS os clientes, veículos, ordens de serviço (com os
-  itens) e o catálogo de marcas/modelos. Os USUÁRIOS são mantidos, para
-  ninguém perder o login.
+  itens) e os catálogos de marcas/modelos e de descrições de serviço.
+  Os USUÁRIOS são mantidos, para ninguém perder o login.
 
   Uso:  npm run db:limpar -- --sim
 
@@ -32,7 +32,7 @@ async function main() {
   // TRUNCATE apaga tudo de uma vez; RESTART IDENTITY faz a próxima OS,
   // o próximo cliente e o próximo veículo voltarem a ser o nº 1.
   await db.execute(
-    sql`TRUNCATE itens_os, ordens_servico, veiculos, catalogo_veiculos, clientes RESTART IDENTITY`,
+    sql`TRUNCATE itens_os, ordens_servico, veiculos, catalogo_veiculos, catalogo_servicos, clientes RESTART IDENTITY`,
   );
 
   const [{ total }] = await db.execute<{ total: number }>(

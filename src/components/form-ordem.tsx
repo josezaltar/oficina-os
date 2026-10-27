@@ -89,6 +89,7 @@ export function FormOrdem({
     cidades: string[];
     tipos: string[];
     catalogo: ItemCatalogo[];
+    servicos: string[];
   };
 }) {
   const [estado, acaoForm] = useActionState(acao, {});
@@ -380,7 +381,7 @@ export function FormOrdem({
       </div>
 
       {/* ------------------------------------------- itens do bloco */}
-      <LinhasItens linhasVazias={3} erros={e} />
+      <LinhasItens linhasVazias={3} erros={e} sugestoes={sugestoes.servicos} />
 
       <div className="flex flex-wrap items-center gap-3">
         <BotaoEnviar enviando="Abrindo...">Abrir ordem de serviço</BotaoEnviar>

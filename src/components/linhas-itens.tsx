@@ -11,6 +11,10 @@
 
   Linhas totalmente em branco não são enviadas: como no papel, pode sobrar
   linha vazia sem dar erro.
+
+  A oficina lança só SERVIÇOS: o tipo vai escondido como "servico".
+  As descrições já usadas aparecem como sugestão (<datalist>) enquanto se
+  digita; ao salvar, as novas entram no catálogo, sem repetir.
 */
 import { useState } from "react";
 import type { TipoItem } from "@/db/schema";
@@ -69,8 +73,11 @@ export function LinhasItens({
   itens = [],
   linhasVazias = 0,
   erros = {},
+  sugestoes = [],
 }: {
   itens?: ItemSalvo[];
+  /** descrições já usadas em outras OS */
+  sugestoes?: string[];
   /** quantas linhas em branco mostrar no começo (como as linhas do papel) */
   linhasVazias?: number;
   /** erros do servidor, no formato "2.descricao" (linha enviada nº 2) */
@@ -116,7 +123,6 @@ export function LinhasItens({
               <th className="text-left">Descrição</th>
               <th className="w-32 text-left">Preço Unit.</th>
               <th className="w-32 text-right">Total</th>
-              <th className="w-28 text-left text-xs font-medium text-slate-500">Tipo</th>
               <th className="w-10">
                 <span className="sr-only">Remover</span>
               </th>
@@ -146,14 +152,18 @@ export function LinhasItens({
                     <ErroLinha erros={erro("quantidade")} />
                   </td>
                   <td className="px-2 py-1">
+                    {/* Tipo escondido: a oficina só lança serviços */}
+                    <input type="hidden" name={nome("tipo")} value={linha.tipo} />
                     <input
                       name={nome("descricao")}
+                      list="sugestoes-servico"
+                      autoComplete="off"
                       aria-label={`Descrição do item ${n}`}
                       value={linha.descricao}
                       onChange={(e) => alterar(linha.chave, "descricao", e.target.value)}
                       aria-invalid={erro("descricao") ? true : undefined}
                       className={classeEntrada}
-                      placeholder="Ex.: Troca de óleo"
+                      placeholder="Ex.: Regulagem de freio"
                     />
                     <ErroLinha erros={erro("descricao")} />
                   </td>
@@ -172,19 +182,6 @@ export function LinhasItens({
                   </td>
                   <td className="px-2 py-2.5 text-right whitespace-nowrap tabular-nums">
                     {emBranco(linha) ? "" : formatarMoeda(previaCentavos(linha))}
-                  </td>
-                  <td className="px-2 py-1">
-                    {/* Discreto: serve para o painel separar peças de serviços */}
-                    <select
-                      name={nome("tipo")}
-                      aria-label={`Tipo do item ${n}`}
-                      value={linha.tipo}
-                      onChange={(e) => alterar(linha.chave, "tipo", e.target.value)}
-                      className="w-full rounded border-0 bg-transparent py-1.5 text-xs text-slate-500 focus:ring-2 focus:ring-amber-500/30"
-                    >
-                      <option value="servico">Serviço</option>
-                      <option value="peca">Peça</option>
-                    </select>
                   </td>
                   <td className="py-1 pr-1 text-right">
                     <button
@@ -208,7 +205,7 @@ export function LinhasItens({
               <td className="px-2 py-3 text-right text-base font-bold whitespace-nowrap tabular-nums">
                 <span data-testid="total-previa">{formatarMoeda(total)}</span>
               </td>
-              <td colSpan={2} />
+              <td />
             </tr>
           </tfoot>
         </table>
@@ -220,20 +217,19 @@ export function LinhasItens({
         TOTAL: {formatarMoeda(total)}
       </p>
 
-      <div className="mt-3 flex flex-wrap gap-2">
+      <datalist id="sugestoes-servico">
+        {sugestoes.map((d) => (
+          <option key={d} value={d} />
+        ))}
+      </datalist>
+
+      <div className="mt-3">
         <button
           type="button"
-          onClick={() => setLinhas((l) => [...l, linhaVazia("servico")])}
+          onClick={() => setLinhas((l) => [...l, linhaVazia()])}
           className={classeBotao.secundario}
         >
-          + Serviço
-        </button>
-        <button
-          type="button"
-          onClick={() => setLinhas((l) => [...l, linhaVazia("peca")])}
-          className={classeBotao.secundario}
-        >
-          + Peça
+          + Adicionar linha
         </button>
       </div>
     </div>

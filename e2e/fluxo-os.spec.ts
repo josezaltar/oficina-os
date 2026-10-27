@@ -49,13 +49,12 @@ test("lança uma OS no bloco, do cadastro à entrega, e reconhece a placa depois
   await page.getByLabel("Modelo *").fill("Constellation 24.280");
   await page.getByLabel("Tipo", { exact: true }).fill("Truck");
 
-  // Itens: um serviço e uma peça; a 3ª linha fica em branco e é ignorada
+  // Itens: dois serviços; a 3ª linha fica em branco e é ignorada
   await page.getByLabel("Descrição do item 1").fill("Troca da bomba d'água");
   await page.getByLabel("Valor unitário do item 1").fill("250,00");
   await page.getByLabel("Quantidade do item 2").fill("2,5");
   await page.getByLabel("Descrição do item 2").fill("Aditivo de radiador (litro)");
   await page.getByLabel("Valor unitário do item 2").fill("45,90");
-  await page.getByLabel("Tipo do item 2").selectOption("peca");
 
   await expect(page.getByTestId("total-previa")).toHaveText(/364,75/);
   await page.getByRole("button", { name: "Abrir ordem de serviço" }).click();
