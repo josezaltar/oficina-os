@@ -99,7 +99,9 @@ export function EditorItens({
 
   return (
     <form action={acaoForm}>
-      <div className="overflow-x-auto">
+      {/* `relative`: sem ele, o texto sr-only (position: absolute) "escapa"
+          da área de rolagem e faz a página inteira rolar para o lado no celular */}
+      <div className="relative overflow-x-auto">
         <table className="w-full min-w-[640px] text-sm">
           <thead>
             <tr className="text-left text-slate-600">

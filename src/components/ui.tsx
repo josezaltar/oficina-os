@@ -220,7 +220,7 @@ export function EstadoVazio({
 /** Tabela com rolagem horizontal no celular. */
 export function Tabela({ children }: { children: ReactNode }) {
   return (
-    <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
+    <div className="relative overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
       <table className="w-full text-left text-sm [&_td]:px-4 [&_td]:py-3 [&_th]:px-4 [&_th]:py-3 [&_th]:font-semibold [&_th]:text-slate-600 [&_thead]:bg-slate-50 [&_tr]:border-b [&_tr]:border-slate-100 [&_tbody_tr:last-child]:border-0">
         {children}
       </table>
