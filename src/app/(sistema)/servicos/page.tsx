@@ -3,7 +3,13 @@ import Link from "next/link";
 import { FormBusca } from "@/components/form-busca";
 import { Cabecalho, EstadoVazio, Tabela, classeBotao } from "@/components/ui";
 import { primeiroValor } from "@/lib/dados/busca";
-import { categoriasDeServico, listarTabelaServicos } from "@/lib/dados/servicos";
+import {
+  COLUNAS_ORDENAVEIS,
+  categoriasDeServico,
+  listarTabelaServicos,
+  type ColunaOrdenavel,
+  type Direcao,
+} from "@/lib/dados/servicos";
 import { formatarMoeda } from "@/lib/formato";
 
 export const metadata: Metadata = { title: "Serviços" };
@@ -12,22 +18,46 @@ export const metadata: Metadata = { title: "Serviços" };
   Tabela de serviços da oficina, com preço. É dela que vêm as sugestões
   da coluna Descrição na OS: escolher um serviço preenche o preço.
   Filtros pela URL: ?busca=junta&categoria=MOTOR
+  Ordenação pela URL: ?ordenar=preco&dir=desc (clicando no título da coluna)
 */
 export default async function ServicosPage({ searchParams }: PageProps<"/servicos">) {
   const parametros = await searchParams;
   const busca = primeiroValor(parametros.busca);
   const categoria = primeiroValor(parametros.categoria);
+  // Só aceita colunas conhecidas (o valor vem da URL, pode ser qualquer coisa)
+  const ordenarPor =
+    COLUNAS_ORDENAVEIS.find((c) => c === primeiroValor(parametros.ordenar)) ?? "descricao";
+  const direcao: Direcao = primeiroValor(parametros.dir) === "desc" ? "desc" : "asc";
+
   const [lista, categorias] = await Promise.all([
-    listarTabelaServicos({ busca, categoria }),
+    listarTabelaServicos({ busca, categoria, ordenarPor, direcao }),
     categoriasDeServico(),
   ]);
 
-  const linkCategoria = (c?: string) => {
+  /** Monta o link mantendo busca, categoria e ordem, trocando só o que mudou. */
+  const link = (mudancas: Record<string, string | undefined>) => {
+    const atual: Record<string, string | undefined> = {
+      busca,
+      categoria,
+      ordenar: ordenarPor === "descricao" ? undefined : ordenarPor,
+      dir: direcao === "asc" ? undefined : direcao,
+    };
     const p = new URLSearchParams();
-    if (c) p.set("categoria", c);
-    if (busca) p.set("busca", busca);
+    for (const [k, v] of Object.entries({ ...atual, ...mudancas })) if (v) p.set(k, v);
     const qs = p.toString();
     return qs ? `/servicos?${qs}` : "/servicos";
+  };
+  const linkCategoria = (c?: string) => link({ categoria: c });
+
+  // Para onde o título de cada coluna leva: mesma coluna inverte a direção
+  const ordemDe = (coluna: ColunaOrdenavel) => {
+    const ativa = ordenarPor === coluna;
+    const proxima: Direcao = ativa && direcao === "asc" ? "desc" : "asc";
+    return {
+      ativa,
+      direcao,
+      href: link({ ordenar: coluna === "descricao" ? undefined : coluna, dir: proxima === "asc" ? undefined : "desc" }),
+    };
   };
 
   return (
@@ -72,6 +102,8 @@ export default async function ServicosPage({ searchParams }: PageProps<"/servico
 
       <FormBusca action="/servicos" valor={busca} placeholder="Descrição ou código">
         {categoria && <input type="hidden" name="categoria" value={categoria} />}
+        {ordenarPor !== "descricao" && <input type="hidden" name="ordenar" value={ordenarPor} />}
+        {direcao === "desc" && <input type="hidden" name="dir" value="desc" />}
       </FormBusca>
 
       {lista.length === 0 ? (
@@ -86,10 +118,12 @@ export default async function ServicosPage({ searchParams }: PageProps<"/servico
           <Tabela>
             <thead>
               <tr>
-                <th className="w-24">Código</th>
-                <th>Descrição</th>
-                <th className="hidden sm:table-cell">Categoria</th>
-                <th className="text-right">Preço</th>
+                <TituloOrdenavel {...ordemDe("referencia")} className="w-24">Código</TituloOrdenavel>
+                <TituloOrdenavel {...ordemDe("descricao")}>Descrição</TituloOrdenavel>
+                <TituloOrdenavel {...ordemDe("categoria")} className="hidden sm:table-cell">
+                  Categoria
+                </TituloOrdenavel>
+                <TituloOrdenavel {...ordemDe("preco")} className="text-right">Preço</TituloOrdenavel>
               </tr>
             </thead>
             <tbody>
@@ -112,5 +146,40 @@ export default async function ServicosPage({ searchParams }: PageProps<"/servico
         </>
       )}
     </div>
+  );
+}
+
+/*
+  Título de coluna clicável: clicar ordena por ela (A→Z / menor→maior);
+  clicar de novo na mesma coluna inverte. A seta mostra a ordem atual.
+  É só um <Link> para outra URL: funciona sem JavaScript, e o link pode
+  ser salvo ou compartilhado já com a ordem escolhida.
+*/
+function TituloOrdenavel({
+  href,
+  ativa,
+  direcao,
+  className = "",
+  children,
+}: {
+  href: string;
+  ativa: boolean;
+  direcao: Direcao;
+  className?: string;
+  children: string;
+}) {
+  return (
+    <th className={className} aria-sort={ativa ? (direcao === "asc" ? "ascending" : "descending") : undefined}>
+      <Link
+        href={href}
+        className={`inline-flex items-center gap-1 hover:text-slate-900 ${ativa ? "text-slate-900" : ""}`}
+        title={`Ordenar por ${children.toLowerCase()}`}
+      >
+        {children}
+        <span aria-hidden="true" className={ativa ? "" : "text-slate-300"}>
+          {ativa ? (direcao === "asc" ? "▲" : "▼") : "↕"}
+        </span>
+      </Link>
+    </th>
   );
 }
