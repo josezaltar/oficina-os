@@ -50,6 +50,10 @@ export const clientes = pgTable("clientes", {
   telefone: text("telefone").notNull(),
   email: text("email"),
   documento: text("documento"), // CPF ou CNPJ, opcional
+  // Endereço como no bloco de OS da oficina: cidade, CEP e número
+  cidade: text("cidade"),
+  cep: text("cep"),
+  numero: text("numero"),
   observacoes: text("observacoes"),
   criadoEm: criadoEm(),
 });
@@ -64,6 +68,7 @@ export const veiculos = pgTable("veiculos", {
   placa: text("placa").notNull().unique(),
   marca: text("marca").notNull(),
   modelo: text("modelo").notNull(),
+  tipo: text("tipo"), // ex.: Cavalo mecânico, Toco, Truck, Utilitário
   ano: integer("ano"),
   criadoEm: criadoEm(),
 });
@@ -106,7 +111,23 @@ export const ordensServico = pgTable("ordens_servico", {
     onDelete: "set null",
   }),
   status: statusOsEnum("status").notNull().default("aberta"),
-  descricaoProblema: text("descricao_problema").notNull(),
+  /*
+    Cópia dos dados do cabeçalho do bloco, do jeito que foram escritos NESTA OS.
+    Se o atendente mudar o telefone só para esta OS, o cadastro do cliente
+    continua como estava, e a OS (e a impressão) mostra o que foi digitado.
+    É o mesmo que acontece com o papel: a folha guarda o que estava escrito.
+  */
+  clienteNome: text("cliente_nome"),
+  clienteTelefone: text("cliente_telefone"),
+  clienteCidade: text("cliente_cidade"),
+  clienteCep: text("cliente_cep"),
+  clienteNumero: text("cliente_numero"),
+  veiculoPlaca: text("veiculo_placa"),
+  veiculoMarca: text("veiculo_marca"),
+  veiculoModelo: text("veiculo_modelo"),
+  veiculoTipo: text("veiculo_tipo"),
+  // Opcional: o bloco de papel não tem esse campo
+  descricaoProblema: text("descricao_problema"),
   kmEntrada: integer("km_entrada"),
   observacoes: text("observacoes"),
   // Dinheiro em centavos (inteiro) para não ter erro de arredondamento.

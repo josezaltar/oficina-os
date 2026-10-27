@@ -18,7 +18,7 @@ import { Campo } from "./ui";
 export type ItemCatalogo = { marca: string; modelo: string; ano: number | null };
 
 /** Remove repetidos sem diferenciar maiúsculas ("Scania" = "SCANIA"). */
-function semRepetir(lista: string[]) {
+export function semRepetir(lista: string[]) {
   const vistos = new Map<string, string>();
   for (const item of lista) {
     const chave = item.toLowerCase();
@@ -27,7 +27,7 @@ function semRepetir(lista: string[]) {
   return [...vistos.values()].sort((a, b) => a.localeCompare(b, "pt-BR"));
 }
 
-const igual = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
+export const igual = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
 
 export function CamposMarcaModelo({
   catalogo,

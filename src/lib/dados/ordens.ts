@@ -29,6 +29,7 @@ export async function listarOrdens(filtro: { status?: StatusOs; busca?: string }
     const termo = termoBusca(busca)!;
     const opcoes = [
       ilike(clientes.nome, termo),
+      ilike(ordensServico.clienteNome, termo),
       ilike(veiculos.placa, termoBusca(normalizarPlaca(busca))!),
       ilike(ordensServico.descricaoProblema, termo),
     ];
@@ -44,9 +45,10 @@ export async function listarOrdens(filtro: { status?: StatusOs; busca?: string }
       descricaoProblema: ordensServico.descricaoProblema,
       totalCentavos: ordensServico.totalCentavos,
       abertaEm: ordensServico.abertaEm,
-      placa: veiculos.placa,
-      veiculo: sql<string>`${veiculos.marca} || ' ' || ${veiculos.modelo}`,
-      clienteNome: clientes.nome,
+      // coalesce: o que foi escrito na OS; se for uma OS antiga, o cadastro
+      placa: sql<string>`coalesce(${ordensServico.veiculoPlaca}, ${veiculos.placa})`,
+      veiculo: sql<string>`coalesce(${ordensServico.veiculoMarca}, ${veiculos.marca}) || ' ' || coalesce(${ordensServico.veiculoModelo}, ${veiculos.modelo})`,
+      clienteNome: sql<string>`coalesce(${ordensServico.clienteNome}, ${clientes.nome})`,
     })
     .from(ordensServico)
     .innerJoin(veiculos, eq(veiculos.id, ordensServico.veiculoId))
@@ -68,4 +70,26 @@ export async function buscarOrdem(id: number) {
       criadoPor: { columns: { nome: true } },
     },
   });
+}
+
+type OrdemCompleta = NonNullable<Awaited<ReturnType<typeof buscarOrdem>>>;
+
+/**
+ * Cabeçalho do bloco desta OS: o que foi escrito NELA.
+ * (As OS antigas, sem a cópia, usam o cadastro atual.)
+ */
+export function cabecalhoDaOrdem(ordem: OrdemCompleta) {
+  const { veiculo } = ordem;
+  const { cliente } = veiculo;
+  return {
+    nome: ordem.clienteNome ?? cliente.nome,
+    telefone: ordem.clienteTelefone ?? cliente.telefone,
+    cidade: ordem.clienteCidade ?? cliente.cidade,
+    cep: ordem.clienteCep ?? cliente.cep,
+    numero: ordem.clienteNumero ?? cliente.numero,
+    placa: ordem.veiculoPlaca ?? veiculo.placa,
+    marca: ordem.veiculoMarca ?? veiculo.marca,
+    modelo: ordem.veiculoModelo ?? veiculo.modelo,
+    tipo: ordem.veiculoTipo ?? veiculo.tipo,
+  };
 }

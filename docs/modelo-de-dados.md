@@ -22,6 +22,9 @@ erDiagram
         text telefone
         text email
         text documento "CPF ou CNPJ"
+        text cidade
+        text cep
+        text numero
         text observacoes
     }
     VEICULOS {
@@ -30,6 +33,7 @@ erDiagram
         text placa UK
         text marca
         text modelo
+        text tipo
         int ano
     }
     ORDENS_SERVICO {
@@ -37,7 +41,10 @@ erDiagram
         int veiculo_id FK
         int criado_por_id FK
         enum status "aberta | em_andamento | pronta | entregue"
-        text descricao_problema
+        text cliente_nome "cópia do bloco"
+        text cliente_telefone "cópia do bloco"
+        text veiculo_placa "cópia do bloco"
+        text descricao_problema "opcional"
         int km_entrada
         int total_centavos
         timestamp aberta_em
@@ -79,6 +86,8 @@ erDiagram
 | Status como **enum** | O banco só aceita os 4 valores válidos. Um erro de digitação como "pronto" é barrado pelo próprio PostgreSQL. |
 | Excluir com **restrict** | Não dá para excluir um cliente que tem veículos, nem um veículo que tem OS. Isso protege o histórico da oficina. Os itens são apagados junto com a OS (**cascade**), porque não fazem sentido sozinhos. |
 | **Catálogo** de marca/modelo/ano separado | Alimenta as sugestões do formulário de veículo e continua existindo mesmo se o veículo for excluído. O índice único usa `lower()`, então "Scania" e "SCANIA" contam como a mesma marca, e o veículo é gravado com a grafia que já existia. |
+| OS guarda a **cópia do cabeçalho** (nome, tel, cidade, CEP, nº, placa, marca, modelo, tipo) | Igual ao bloco de papel: a OS mostra o que foi escrito nela. Se o atendente mudar o telefone só para esta OS, o cadastro do cliente continua como estava. |
+| **Placa nova** cadastra cliente e veículo | Ao abrir a OS com uma placa que o sistema não conhece, o veículo é cadastrado. O cliente é reaproveitado se já existir um com o mesmo nome (dono de frota); senão, é cadastrado também. Tudo numa transação. |
 | Placa **única** | Duas fichas para o mesmo caminhão causariam confusão no histórico. |
 
 ## Fluxo de status da OS

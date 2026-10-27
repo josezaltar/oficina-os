@@ -7,14 +7,17 @@
   e atualizamos o total. Se qualquer passo falhar no meio, o banco desfaz
   tudo, e a OS nunca fica com itens novos e o total velho.
 */
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/db";
-import { itensOs, ordensServico, statusOsEnum } from "@/db/schema";
+import { clientes, itensOs, ordensServico, statusOsEnum, veiculos } from "@/db/schema";
 import { exigirGerente, exigirUsuario } from "@/lib/auth";
+import { dadosPorPlaca, type DadosDaPlaca } from "@/lib/dados/bloco";
+import { registrarNoCatalogo } from "@/lib/dados/catalogo";
 import { errosDoZod, lerCampos, type EstadoForm } from "@/lib/estado-form";
+import { hojeEmSaoPaulo, normalizarPlaca } from "@/lib/formato";
 import {
   ROTULO_STATUS,
   calcularTotalCentavos,
@@ -22,7 +25,7 @@ import {
   podeExcluirOs,
   podeMudarStatus,
 } from "@/lib/regras-os";
-import { esquemaItens, esquemaOrdem } from "@/lib/validacao";
+import { REGEX_PLACA, esquemaItens, esquemaOrdem } from "@/lib/validacao";
 
 /** Erro de regra de negócio: a mensagem pode ser mostrada para a pessoa. */
 class ErroRegra extends Error {}
@@ -35,29 +38,157 @@ function revalidarOrdem(id: number) {
 
 // --------------------------------------------------------------- abrir OS
 
+/** Busca usada pelo bloco quando o atendente termina de digitar a placa. */
+export async function consultarPlaca(placa: string): Promise<DadosDaPlaca | null> {
+  if (!REGEX_PLACA.test(normalizarPlaca(placa))) return null;
+  return dadosPorPlaca(placa);
+}
+
+const CAMPOS_BLOCO = [
+  "placa",
+  "data",
+  "nome",
+  "telefone",
+  "cidade",
+  "cep",
+  "numero",
+  "marca",
+  "modelo",
+  "tipoVeiculo",
+];
+
+/*
+  Abre a OS a partir do bloco, numa transação só:
+  1. placa conhecida → usa o veículo (e o cliente) que já existem, SEM mudar
+     o cadastro: o que foi digitado fica só nesta OS;
+  2. placa nova → cadastra o veículo; o cliente é reaproveitado se já existir
+     um com o mesmo nome (dono de frota trazendo outro caminhão), senão é
+     cadastrado também;
+  3. grava a OS com a cópia do cabeçalho e os itens, e calcula o total.
+*/
 export async function criarOrdem(
   _estado: EstadoForm,
   formData: FormData,
 ): Promise<EstadoForm> {
   const usuario = await exigirUsuario();
 
-  const valores = lerCampos(formData, [
-    "veiculoId",
-    "descricaoProblema",
-    "kmEntrada",
-    "observacoes",
-  ]);
-  const resultado = esquemaOrdem.safeParse(valores);
-  if (!resultado.success) return errosDoZod(resultado.error, valores);
+  const valores = lerCampos(formData, CAMPOS_BLOCO);
+  const cabecalho = esquemaOrdem.safeParse(valores);
+  const itens = esquemaItens.safeParse(lerItens(formData));
 
-  const [nova] = await db
-    .insert(ordensServico)
-    .values({ ...resultado.data, criadoPorId: usuario.id })
-    .returning({ id: ordensServico.id, veiculoId: ordensServico.veiculoId });
+  if (!cabecalho.success || !itens.success) {
+    // Junta os erros do cabeçalho e dos itens numa resposta só
+    const erros = {
+      ...(cabecalho.success ? {} : errosDoZod(cabecalho.error).erros),
+      ...(itens.success ? {} : errosDoZod(itens.error).erros),
+    };
+    return { erros, mensagem: "Corrija os campos destacados." };
+  }
 
-  revalidarOrdem(nova.id);
-  revalidatePath(`/veiculos/${nova.veiculoId}`);
-  redirect(`/ordens/${nova.id}`);
+  const b = cabecalho.data;
+
+  const id = await db.transaction(async (tx) => {
+    let [veiculo] = await tx
+      .select({ id: veiculos.id })
+      .from(veiculos)
+      .where(eq(veiculos.placa, b.placa))
+      .limit(1);
+
+    if (!veiculo) {
+      const clienteId = await clienteParaPlacaNova(tx, b);
+      const grafia = await registrarNoCatalogo(tx, { marca: b.marca, modelo: b.modelo, ano: null });
+      [veiculo] = await tx
+        .insert(veiculos)
+        .values({ clienteId, placa: b.placa, tipo: b.tipoVeiculo, ...grafia })
+        .returning({ id: veiculos.id });
+    }
+
+    const [nova] = await tx
+      .insert(ordensServico)
+      .values({
+        veiculoId: veiculo.id,
+        criadoPorId: usuario.id,
+        abertaEm: momentoDaData(b.data),
+        clienteNome: b.nome,
+        clienteTelefone: b.telefone,
+        clienteCidade: b.cidade,
+        clienteCep: b.cep,
+        clienteNumero: b.numero,
+        veiculoPlaca: b.placa,
+        veiculoMarca: b.marca,
+        veiculoModelo: b.modelo,
+        veiculoTipo: b.tipoVeiculo,
+        totalCentavos: calcularTotalCentavos(itens.data),
+      })
+      .returning({ id: ordensServico.id });
+
+    if (itens.data.length > 0) {
+      await tx.insert(itensOs).values(itens.data.map((item) => ({ ...item, ordemId: nova.id })));
+    }
+    return nova.id;
+  });
+
+  revalidarOrdem(id);
+  revalidatePath("/clientes");
+  revalidatePath("/veiculos");
+  redirect(`/ordens/${id}`);
+}
+
+type Transacao = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+/** Cliente dono de um veículo novo: reaproveita pelo nome ou cadastra. */
+async function clienteParaPlacaNova(
+  tx: Transacao,
+  b: { nome: string; telefone: string; cidade: string | null; cep: string | null; numero: string | null },
+) {
+  const mesmoNome = await tx
+    .select({ id: clientes.id, telefone: clientes.telefone })
+    .from(clientes)
+    .where(sql`lower(${clientes.nome}) = lower(${b.nome})`);
+
+  const digitos = (t: string) => t.replace(/\D/g, "");
+  const mesmoTelefone = mesmoNome.find((c) => digitos(c.telefone) === digitos(b.telefone));
+  if (mesmoTelefone) return mesmoTelefone.id;
+  if (mesmoNome.length === 1) return mesmoNome[0].id;
+
+  const [novo] = await tx
+    .insert(clientes)
+    .values({
+      nome: b.nome,
+      telefone: b.telefone,
+      cidade: b.cidade,
+      cep: b.cep,
+      numero: b.numero,
+    })
+    .returning({ id: clientes.id });
+  return novo.id;
+}
+
+/**
+ * Data do bloco → momento de abertura da OS.
+ * Hoje: agora (com a hora certa). Outro dia (OS lançada depois): meio-dia
+ * daquele dia no horário de Brasília.
+ */
+function momentoDaData(data: string) {
+  return data === hojeEmSaoPaulo() ? new Date() : new Date(`${data}T12:00:00-03:00`);
+}
+
+/*
+  O editor de itens manda os campos repetidos (tipo, descricao, quantidade,
+  valor), um de cada por linha. getAll() devolve cada grupo como lista, e
+  juntamos pela posição.
+*/
+function lerItens(formData: FormData) {
+  const tipos = formData.getAll("tipo");
+  const descricoes = formData.getAll("descricao");
+  const quantidades = formData.getAll("quantidade");
+  const valores = formData.getAll("valor");
+  return tipos.map((tipo, i) => ({
+    tipo: String(tipo),
+    descricao: String(descricoes[i] ?? ""),
+    quantidade: String(quantidades[i] ?? ""),
+    valorUnitarioCentavos: String(valores[i] ?? ""),
+  }));
 }
 
 // ---------------------------------------------------------- salvar itens
@@ -69,23 +200,7 @@ export async function salvarItens(
 ): Promise<EstadoForm> {
   await exigirUsuario();
 
-  /*
-    O editor manda os itens como campos repetidos:
-      tipo=peca, tipo=servico / descricao=..., descricao=... / etc.
-    getAll() devolve cada grupo como lista; juntamos pela posição.
-  */
-  const tipos = formData.getAll("tipo");
-  const descricoes = formData.getAll("descricao");
-  const quantidades = formData.getAll("quantidade");
-  const valores = formData.getAll("valor");
-  const brutos = tipos.map((tipo, i) => ({
-    tipo: String(tipo),
-    descricao: String(descricoes[i] ?? ""),
-    quantidade: String(quantidades[i] ?? ""),
-    valorUnitarioCentavos: String(valores[i] ?? ""),
-  }));
-
-  const resultado = esquemaItens.safeParse(brutos);
+  const resultado = esquemaItens.safeParse(lerItens(formData));
   if (!resultado.success) {
     // Os erros vêm como "2.descricao" (linha 2, campo descrição)
     return errosDoZod(resultado.error);

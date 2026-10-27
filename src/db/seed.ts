@@ -73,14 +73,14 @@ async function main() {
   const listaClientes = await db
     .insert(clientes)
     .values([
-      { nome: "Transportes Serra Azul Ltda", telefone: "(37) 99900-0001", documento: "00.000.000/0001-01", email: "frota@serraazul.exemplo" },
-      { nome: "Agropecuária Vale Verde", telefone: "(37) 99900-0002", documento: "00.000.000/0001-02" },
-      { nome: "Carlos Henrique Moreira", telefone: "(37) 99900-0003", documento: "000.000.000-03" },
-      { nome: "Mineração Pedra Branca", telefone: "(37) 99900-0004", email: "manutencao@pedrabranca.exemplo" },
-      { nome: "Ana Paula Rezende", telefone: "(37) 99900-0005" },
-      { nome: "Laticínios Boa Vista", telefone: "(37) 99900-0006", observacoes: "Pagamento sempre no boleto, 28 dias." },
-      { nome: "Roberto Alves Teixeira", telefone: "(37) 99900-0007" },
-      { nome: "Construtora Horizonte", telefone: "(37) 99900-0008", documento: "00.000.000/0001-08" },
+      { nome: "Transportes Serra Azul Ltda", telefone: "(37) 99900-0001", documento: "00.000.000/0001-01", email: "frota@serraazul.exemplo", cidade: "Divinópolis" },
+      { nome: "Agropecuária Vale Verde", telefone: "(37) 99900-0002", documento: "00.000.000/0001-02", cidade: "Itaúna" },
+      { nome: "Carlos Henrique Moreira", telefone: "(37) 99900-0003", documento: "000.000.000-03", cidade: "Divinópolis" },
+      { nome: "Mineração Pedra Branca", telefone: "(37) 99900-0004", email: "manutencao@pedrabranca.exemplo", cidade: "Nova Serrana" },
+      { nome: "Ana Paula Rezende", telefone: "(37) 99900-0005", cidade: "Divinópolis" },
+      { nome: "Laticínios Boa Vista", telefone: "(37) 99900-0006", observacoes: "Pagamento sempre no boleto, 28 dias.", cidade: "Carmo do Cajuru" },
+      { nome: "Roberto Alves Teixeira", telefone: "(37) 99900-0007", cidade: "Cláudio" },
+      { nome: "Construtora Horizonte", telefone: "(37) 99900-0008", documento: "00.000.000/0001-08", cidade: "Divinópolis" },
     ])
     .returning();
 
@@ -90,16 +90,16 @@ async function main() {
   const listaVeiculos = await db
     .insert(veiculos)
     .values([
-      { clienteId: c(0), placa: "SRA1A01", marca: "Scania", modelo: "R 450", ano: 2019 },
-      { clienteId: c(0), placa: "SRA2B02", marca: "Volvo", modelo: "FH 540", ano: 2021 },
-      { clienteId: c(1), placa: "VLV3C03", marca: "Mercedes-Benz", modelo: "Atego 2426", ano: 2017 },
-      { clienteId: c(2), placa: "CHM4D04", marca: "Toyota", modelo: "Hilux SRV", ano: 2020 },
-      { clienteId: c(3), placa: "MPB5E05", marca: "Volkswagen", modelo: "Constellation 24.280", ano: 2018 },
-      { clienteId: c(3), placa: "MPB6F06", marca: "Iveco", modelo: "Tector 240E28", ano: 2016 },
-      { clienteId: c(4), placa: "APR7G07", marca: "Ford", modelo: "Ranger XLS", ano: 2022 },
-      { clienteId: c(5), placa: "LBV8H08", marca: "Ford", modelo: "Cargo 2429", ano: 2015 },
-      { clienteId: c(6), placa: "RAT9J09", marca: "Mitsubishi", modelo: "L200 Triton", ano: 2019 },
-      { clienteId: c(7), placa: "CHZ0K10", marca: "Mercedes-Benz", modelo: "Sprinter 416", ano: 2021 },
+      { clienteId: c(0), placa: "SRA1A01", marca: "Scania", modelo: "R 450", tipo: "Cavalo mecânico", ano: 2019 },
+      { clienteId: c(0), placa: "SRA2B02", marca: "Volvo", modelo: "FH 540", tipo: "Cavalo mecânico", ano: 2021 },
+      { clienteId: c(1), placa: "VLV3C03", marca: "Mercedes-Benz", modelo: "Atego 2426", tipo: "Truck", ano: 2017 },
+      { clienteId: c(2), placa: "CHM4D04", marca: "Toyota", modelo: "Hilux SRV", tipo: "Caminhonete", ano: 2020 },
+      { clienteId: c(3), placa: "MPB5E05", marca: "Volkswagen", modelo: "Constellation 24.280", tipo: "Truck", ano: 2018 },
+      { clienteId: c(3), placa: "MPB6F06", marca: "Iveco", modelo: "Tector 240E28", tipo: "Truck", ano: 2016 },
+      { clienteId: c(4), placa: "APR7G07", marca: "Ford", modelo: "Ranger XLS", tipo: "Caminhonete", ano: 2022 },
+      { clienteId: c(5), placa: "LBV8H08", marca: "Ford", modelo: "Cargo 2429", tipo: "Truck", ano: 2015 },
+      { clienteId: c(6), placa: "RAT9J09", marca: "Mitsubishi", modelo: "L200 Triton", tipo: "Caminhonete", ano: 2019 },
+      { clienteId: c(7), placa: "CHZ0K10", marca: "Mercedes-Benz", modelo: "Sprinter 416", tipo: "Utilitário", ano: 2021 },
     ])
     .returning();
 
@@ -191,10 +191,20 @@ async function main() {
   ];
 
   for (const o of ordens) {
+    // Cópia dos dados do cadastro no "cabeçalho do bloco" da OS
+    const veiculo = listaVeiculos.find((ve) => ve.id === o.veiculoId)!;
+    const cliente = listaClientes.find((cl) => cl.id === veiculo.clienteId)!;
     const [ordem] = await db
       .insert(ordensServico)
       .values({
         veiculoId: o.veiculoId,
+        clienteNome: cliente.nome,
+        clienteTelefone: cliente.telefone,
+        clienteCidade: cliente.cidade,
+        veiculoPlaca: veiculo.placa,
+        veiculoMarca: veiculo.marca,
+        veiculoModelo: veiculo.modelo,
+        veiculoTipo: veiculo.tipo,
         criadoPorId: o.abertaHaDias % 2 === 0 ? gerente.id : atendente.id,
         status: o.status,
         descricaoProblema: o.descricaoProblema,

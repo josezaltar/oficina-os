@@ -37,17 +37,32 @@ const inteiroOpcional = (min: number, max: number, mensagem: string) =>
 
 // ---------------------------------------------------------------- clientes
 
+const telefone = textoObrigatorio("Informe um telefone para contato.").pipe(
+  z.string().regex(/^[\d\s()+-]{8,20}$/, { error: "Telefone inválido." }),
+);
+
+// CEP opcional: aceita "35500-000" ou "35500000" e guarda como 35500-000
+const cep = textoOpcional.pipe(
+  z
+    .string()
+    .transform((v) => v.replace(/\D/g, ""))
+    .pipe(z.string().length(8, { error: "CEP inválido. Use 00000-000." }))
+    .transform((v) => `${v.slice(0, 5)}-${v.slice(5)}`)
+    .nullable(),
+);
+
 export const esquemaCliente = z.object({
   nome: textoObrigatorio("Informe o nome do cliente.").pipe(
     z.string().max(120, { error: "Nome muito longo." }),
   ),
-  telefone: textoObrigatorio("Informe um telefone para contato.").pipe(
-    z.string().regex(/^[\d\s()+-]{8,20}$/, { error: "Telefone inválido." }),
-  ),
+  telefone,
   email: textoOpcional.pipe(
     z.email({ error: "E-mail inválido." }).nullable(),
   ),
   documento: textoOpcional,
+  cidade: textoOpcional,
+  cep,
+  numero: textoOpcional,
   observacoes: textoOpcional,
 });
 
@@ -77,6 +92,7 @@ export const esquemaVeiculo = z.object({
   // uma marca "diferente" no catálogo
   marca: textoObrigatorio("Informe a marca.").transform(juntarEspacos),
   modelo: textoObrigatorio("Informe o modelo.").transform(juntarEspacos),
+  tipo: textoOpcional,
   ano: inteiroOpcional(1950, 2100, "Ano inválido."),
 });
 
@@ -84,16 +100,32 @@ export type DadosVeiculo = z.infer<typeof esquemaVeiculo>;
 
 // --------------------------------------------------------- ordem de serviço
 
+const placa = z
+  .string()
+  .transform(normalizarPlaca)
+  .pipe(
+    z.string().regex(REGEX_PLACA, {
+      error: "Placa inválida. Use o formato ABC1D23 ou ABC1234.",
+    }),
+  );
+
+/*
+  Cabeçalho da OS, igual ao bloco de papel da oficina:
+  NOME, DATA, CIDADE, MARCA, CEP, Nº, MODELO, TIPO, TEL e PLACA.
+  Os itens (Unid., Descrição, Preço Unit.) são validados pelo esquemaItens.
+*/
 export const esquemaOrdem = z.object({
-  veiculoId: z.coerce
-    .number({ error: "Escolha o veículo." })
-    .int()
-    .positive({ error: "Escolha o veículo." }),
-  descricaoProblema: textoObrigatorio(
-    "Descreva o problema relatado pelo cliente.",
-  ),
-  kmEntrada: inteiroOpcional(0, 9_999_999, "Quilometragem inválida."),
-  observacoes: textoOpcional,
+  placa,
+  data: z.iso.date({ error: "Data inválida." }),
+  nome: textoObrigatorio("Informe o nome do cliente."),
+  telefone,
+  cidade: textoOpcional,
+  cep,
+  numero: textoOpcional,
+  marca: textoObrigatorio("Informe a marca.").transform(juntarEspacos),
+  modelo: textoObrigatorio("Informe o modelo.").transform(juntarEspacos),
+  // "tipoVeiculo" porque "tipo" já é o campo peça/serviço de cada item
+  tipoVeiculo: textoOpcional,
 });
 
 export type DadosOrdem = z.infer<typeof esquemaOrdem>;

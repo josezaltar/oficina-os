@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { esquemaCliente, esquemaItem, esquemaVeiculo } from "./validacao";
+import { esquemaCliente, esquemaItem, esquemaOrdem, esquemaVeiculo } from "./validacao";
 
 describe("validação de cliente", () => {
   it("aceita cliente válido e transforma campos vazios em null", () => {
@@ -8,6 +8,9 @@ describe("validação de cliente", () => {
       telefone: "(37) 99999-0000",
       email: "",
       documento: "",
+      cidade: "",
+      cep: "",
+      numero: "",
       observacoes: "",
     });
     expect(resultado).toEqual({
@@ -15,6 +18,9 @@ describe("validação de cliente", () => {
       telefone: "(37) 99999-0000",
       email: null,
       documento: null,
+      cidade: null,
+      cep: null,
+      numero: null,
       observacoes: null,
     });
   });
@@ -25,6 +31,9 @@ describe("validação de cliente", () => {
       telefone: "",
       email: "",
       documento: "",
+      cidade: "",
+      cep: "",
+      numero: "",
       observacoes: "",
     });
     expect(resultado.success).toBe(false);
@@ -39,6 +48,9 @@ describe("validação de cliente", () => {
       telefone: "(37) 99999-0000",
       email: "ana@",
       documento: "",
+      cidade: "",
+      cep: "",
+      numero: "",
       observacoes: "",
     });
     expect(resultado.success).toBe(false);
@@ -46,7 +58,7 @@ describe("validação de cliente", () => {
 });
 
 describe("validação de veículo", () => {
-  const base = { clienteId: "1", marca: "Scania", modelo: "R 450", ano: "" };
+  const base = { clienteId: "1", marca: "Scania", modelo: "R 450", tipo: "", ano: "" };
 
   it("aceita placa Mercosul e antiga, com ou sem hífen", () => {
     expect(esquemaVeiculo.parse({ ...base, placa: "abc-1d23" }).placa).toBe("ABC1D23");
@@ -92,5 +104,53 @@ describe("validação de item da OS", () => {
       esquemaItem.safeParse({ tipo: "brinde", descricao: "X", quantidade: "1", valorUnitarioCentavos: "1" })
         .success,
     ).toBe(false);
+  });
+});
+
+describe("validação do bloco da OS", () => {
+  const bloco = {
+    placa: "abc-1d23",
+    data: "2026-10-27",
+    nome: "  João  ",
+    telefone: "(37) 99999-0000",
+    cidade: "",
+    cep: "35500000",
+    numero: "",
+    marca: " Volkswagen ",
+    modelo: "Constellation   24.280",
+    tipoVeiculo: "",
+  };
+
+  it("normaliza placa, CEP e espaços, e transforma vazios em null", () => {
+    expect(esquemaOrdem.parse(bloco)).toEqual({
+      placa: "ABC1D23",
+      data: "2026-10-27",
+      nome: "João",
+      telefone: "(37) 99999-0000",
+      cidade: null,
+      cep: "35500-000",
+      numero: null,
+      marca: "Volkswagen",
+      modelo: "Constellation 24.280",
+      tipoVeiculo: null,
+    });
+  });
+
+  it("exige placa, nome, telefone, marca e modelo", () => {
+    const resultado = esquemaOrdem.safeParse({
+      ...bloco,
+      placa: "",
+      nome: "",
+      telefone: "",
+      marca: "",
+      modelo: "",
+    });
+    const campos = resultado.error?.issues.map((i) => i.path[0]);
+    expect(campos).toEqual(expect.arrayContaining(["placa", "nome", "telefone", "marca", "modelo"]));
+  });
+
+  it("recusa CEP incompleto e data inválida", () => {
+    expect(esquemaOrdem.safeParse({ ...bloco, cep: "3550" }).success).toBe(false);
+    expect(esquemaOrdem.safeParse({ ...bloco, data: "27/10/2026" }).success).toBe(false);
   });
 });

@@ -29,6 +29,9 @@ export default async function EditarClientePage({
             telefone: cliente.telefone,
             email: cliente.email ?? "",
             documento: cliente.documento ?? "",
+            cidade: cliente.cidade ?? "",
+            cep: cliente.cep ?? "",
+            numero: cliente.numero ?? "",
             observacoes: cliente.observacoes ?? "",
           }}
         />

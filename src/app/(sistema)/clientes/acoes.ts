@@ -25,7 +25,7 @@ import {
 } from "@/lib/estado-form";
 import { esquemaCliente } from "@/lib/validacao";
 
-const CAMPOS = ["nome", "telefone", "email", "documento", "observacoes"];
+const CAMPOS = ["nome", "telefone", "email", "documento", "cidade", "cep", "numero", "observacoes"];
 
 /*
   Assinatura (estadoAnterior, formData): é o formato exigido pelo

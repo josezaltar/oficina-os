@@ -37,6 +37,7 @@ export default async function EditarVeiculoPage({
             placa: veiculo.placa,
             marca: veiculo.marca,
             modelo: veiculo.modelo,
+            tipo: veiculo.tipo ?? "",
             ano: veiculo.ano ? String(veiculo.ano) : "",
           }}
         />

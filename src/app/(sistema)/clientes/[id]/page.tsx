@@ -38,6 +38,9 @@ export default async function ClientePage({ params }: PageProps<"/clientes/[id]"
           <Info rotulo="Telefone" valor={cliente.telefone} />
           <Info rotulo="E-mail" valor={cliente.email} />
           <Info rotulo="CPF/CNPJ" valor={cliente.documento} />
+          <Info rotulo="Cidade" valor={cliente.cidade} />
+          <Info rotulo="CEP" valor={cliente.cep} />
+          <Info rotulo="Nº" valor={cliente.numero} />
           {cliente.observacoes && (
             <div className="sm:col-span-3">
               <Info rotulo="Observações" valor={cliente.observacoes} />

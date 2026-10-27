@@ -16,7 +16,6 @@ import { buscarVeiculo } from "@/lib/dados/veiculos";
 import {
   formatarData,
   formatarMoeda,
-  formatarNumero,
   formatarPlaca,
 } from "@/lib/formato";
 import { excluirVeiculo } from "../acoes";
@@ -36,6 +35,7 @@ export default async function VeiculoPage({ params }: PageProps<"/veiculos/[id]"
         descricao={
           <>
             <span className="font-mono">{formatarPlaca(veiculo.placa)}</span>
+            {veiculo.tipo ? ` · ${veiculo.tipo}` : ""}
             {veiculo.ano ? ` · ${veiculo.ano}` : ""} · dono:{" "}
             <Link href={`/clientes/${veiculo.cliente.id}`} className="underline">
               {veiculo.cliente.nome}
@@ -61,8 +61,6 @@ export default async function VeiculoPage({ params }: PageProps<"/veiculos/[id]"
               <tr>
                 <th>OS</th>
                 <th>Entrada</th>
-                <th className="hidden md:table-cell">Problema</th>
-                <th className="hidden sm:table-cell text-right">Km</th>
                 <th>Status</th>
                 <th className="text-right">Total</th>
               </tr>
@@ -76,10 +74,6 @@ export default async function VeiculoPage({ params }: PageProps<"/veiculos/[id]"
                     </Link>
                   </td>
                   <td>{formatarData(o.abertaEm)}</td>
-                  <td className="hidden max-w-xs truncate md:table-cell">{o.descricaoProblema}</td>
-                  <td className="hidden text-right sm:table-cell">
-                    {o.kmEntrada ? formatarNumero(o.kmEntrada) : "—"}
-                  </td>
                   <td>
                     <EtiquetaStatus status={o.status} />
                   </td>

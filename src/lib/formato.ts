@@ -19,6 +19,12 @@ export function formatarMoeda(centavos: number) {
 */
 const FUSO = "America/Sao_Paulo";
 
+/** Data de hoje no horário de Brasília, no formato do <input type="date">: "2026-10-27" */
+export function hojeEmSaoPaulo() {
+  // en-CA formata como AAAA-MM-DD
+  return new Intl.DateTimeFormat("en-CA", { timeZone: FUSO }).format(new Date());
+}
+
 /** Date → "27/10/2026" */
 export function formatarData(data: Date) {
   return data.toLocaleDateString("pt-BR", { timeZone: FUSO });

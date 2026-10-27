@@ -15,7 +15,7 @@ import {
 } from "@/lib/estado-form";
 import { esquemaVeiculo } from "@/lib/validacao";
 
-const CAMPOS = ["clienteId", "placa", "marca", "modelo", "ano"];
+const CAMPOS = ["clienteId", "placa", "marca", "modelo", "tipo", "ano"];
 
 const PLACA_REPETIDA: EstadoForm = {
   erros: { placa: ["Já existe um veículo com esta placa."] },

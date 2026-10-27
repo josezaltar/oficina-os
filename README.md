@@ -12,9 +12,11 @@ você entra como gerente, com dados fictícios.
 
 ## Funcionalidades
 
-- **Ordens de serviço**: abertura a partir do veículo, lançamento de peças e
-  serviços com prévia do total em tempo real, fluxo de status
-  (Aberta → Em andamento → Pronta → Entregue) e impressão em A4.
+- **Ordens de serviço no formato do bloco de papel da oficina**: digitando a
+  placa, o sistema preenche o bloco com o cadastro do veículo e do cliente; se
+  a placa for nova, cadastra os dois ao abrir a OS. Itens com prévia do total
+  em tempo real, fluxo de status (Aberta → Em andamento → Pronta → Entregue) e
+  impressão igual ao bloco, com **2 vias na mesma folha A4** para o cliente assinar.
 - **Clientes e veículos**: cadastro com validação (placa antiga e Mercosul),
   histórico de OS por veículo e busca pela URL. Marca, modelo e ano já
   cadastrados viram sugestões, sem repetir a mesma marca com grafias diferentes.

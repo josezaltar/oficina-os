@@ -1,8 +1,11 @@
 /*
-  Fluxo principal da oficina, do começo ao fim (etapa 9):
-  login → cliente → veículo → OS → itens → status até "Entregue".
+  Fluxo principal da oficina, do começo ao fim (etapa 9), com a OS no
+  formato do bloco de papel:
+  1. placa nova → o bloco cadastra cliente e veículo ao abrir a OS;
+  2. a mesma placa de novo → o bloco é preenchido sozinho.
 
-  Pré-requisitos: banco com as migrations e o seed (conta demo).
+  Pré-requisitos: banco com as migrations e um usuário gerente
+  (o seed cria a conta demo).
     npm run db:migrate
     npm run db:seed -- --sim
 */
@@ -20,53 +23,46 @@ test("páginas internas exigem login", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Entrar", exact: true })).toBeVisible();
 });
 
-test("lança uma OS completa, do cadastro à entrega", async ({ page }) => {
-  // 1. Login pela conta demo
+test("lança uma OS no bloco, do cadastro à entrega, e reconhece a placa depois", async ({ page }) => {
+  // Login pela conta demo
   await page.goto("/login");
   await page.getByRole("button", { name: "Entrar como demonstração" }).click();
   await expect(page.getByRole("heading", { name: "Painel" })).toBeVisible();
 
-  // 2. Cadastra o cliente (testando a validação antes)
-  await page.getByRole("link", { name: "Clientes" }).click();
-  await page.getByRole("link", { name: "Novo cliente" }).click();
-  await page.getByRole("button", { name: "Salvar cliente" }).click();
+  // ---------------------------------------------------------- placa nova
+  await page.getByRole("link", { name: "Nova OS" }).click();
+  await expect(page.getByRole("heading", { name: "Nova ordem de serviço" })).toBeVisible();
+
+  // Sem preencher nada: o servidor devolve os erros
+  await page.getByRole("button", { name: "Abrir ordem de serviço" }).click();
   await expect(page.getByText("Informe o nome do cliente.")).toBeVisible();
 
-  await page.getByLabel("Nome *").fill(nomeCliente);
-  await page.getByLabel("Telefone *").fill("(37) 98888-0000");
-  await page.getByRole("button", { name: "Salvar cliente" }).click();
-  await expect(page.getByRole("heading", { name: nomeCliente })).toBeVisible();
-
-  // 3. Cadastra o veículo a partir da página do cliente
-  await page.getByRole("link", { name: "+ Adicionar veículo" }).click();
   await page.getByLabel("Placa *").fill(placa);
-  await page.getByLabel("Marca *").fill("Scania");
-  await page.getByLabel("Modelo *").fill("G 420");
-  await page.getByRole("button", { name: "Salvar veículo" }).click();
-  await expect(page.getByRole("heading", { name: "Scania G 420" })).toBeVisible();
+  await expect(page.getByText("Placa nova")).toBeVisible();
 
-  // 4. Abre a OS
-  await page.getByRole("link", { name: "Abrir OS" }).click();
-  await page.getByLabel("Problema relatado pelo cliente *").fill("Motor esquentando");
-  await page.getByLabel("Km na entrada").fill("350000");
-  await page.getByRole("button", { name: "Abrir ordem de serviço" }).click();
-  await expect(page.getByRole("heading", { name: /OS nº \d+/ })).toBeVisible();
+  await page.getByLabel("Nome *").fill(nomeCliente);
+  // O erro do nome some assim que o campo é corrigido
+  await expect(page.getByText("Informe o nome do cliente.")).toBeHidden();
+  await page.getByLabel("Tel *").fill("(37) 98888-0000");
+  await page.getByLabel("Cidade").fill("Divinópolis");
+  await page.getByLabel("Marca *").fill("Volkswagen");
+  await page.getByLabel("Modelo *").fill("Constellation 24.280");
+  await page.getByLabel("Tipo", { exact: true }).fill("Truck");
 
-  // 5. Lança um serviço e uma peça; a prévia do total aparece na hora
-  await page.getByRole("button", { name: "+ Serviço" }).click();
+  // Itens: um serviço e uma peça; a 3ª linha fica em branco e é ignorada
   await page.getByLabel("Descrição do item 1").fill("Troca da bomba d'água");
   await page.getByLabel("Valor unitário do item 1").fill("250,00");
-
-  await page.getByRole("button", { name: "+ Peça" }).click();
-  await page.getByLabel("Descrição do item 2").fill("Aditivo de radiador (litro)");
   await page.getByLabel("Quantidade do item 2").fill("2,5");
+  await page.getByLabel("Descrição do item 2").fill("Aditivo de radiador (litro)");
   await page.getByLabel("Valor unitário do item 2").fill("45,90");
+  await page.getByLabel("Tipo do item 2").selectOption("peca");
 
   await expect(page.getByTestId("total-previa")).toHaveText(/364,75/);
-  await page.getByRole("button", { name: "Salvar itens" }).click();
-  await expect(page.getByText("Itens salvos.")).toBeVisible();
+  await page.getByRole("button", { name: "Abrir ordem de serviço" }).click();
+  await expect(page.getByRole("heading", { name: /OS nº \d+/ })).toBeVisible();
+  const urlOs = page.url();
 
-  // 6. Avança o status até a entrega
+  // ---------------------------------------------------------- status
   await page.getByRole("button", { name: "Iniciar serviço" }).click();
   await expect(page.getByText('Status alterado para "Em andamento".')).toBeVisible();
 
@@ -77,7 +73,21 @@ test("lança uma OS completa, do cadastro à entrega", async ({ page }) => {
   await page.getByRole("button", { name: "Registrar entrega" }).click();
   await expect(page.getByText("OS finalizada. O status não muda mais.")).toBeVisible();
 
-  // 7. A OS aparece na lista de entregues
-  await page.goto(`/ordens?status=entregue&busca=${placa}`);
-  await expect(page.getByRole("cell", { name: /TST/ })).toBeVisible();
+  // A impressão sai no formato do bloco, com o total
+  await page.goto(urlOs.replace("/ordens/", "/imprimir/os/"));
+  // Padrão: 2 vias na mesma folha, cada uma com o total
+  await expect(page.getByTestId("via")).toHaveCount(2);
+  await expect(page.getByTestId("total-impresso").first()).toHaveText(/364,75/);
+
+  // ---------------------------------------------------------- mesma placa
+  await page.goto("/ordens/nova");
+  await page.getByLabel("Placa *").fill(placa);
+  await expect(page.getByText("Veículo já cadastrado")).toBeVisible();
+  await expect(page.getByLabel("Nome *")).toHaveValue(nomeCliente);
+  await expect(page.getByLabel("Tel *")).toHaveValue("(37) 98888-0000");
+  await expect(page.getByLabel("Modelo *")).toHaveValue("Constellation 24.280");
+
+  // O cliente e o veículo foram cadastrados pela primeira OS
+  await page.goto(`/veiculos?busca=${placa}`);
+  await expect(page.getByRole("cell", { name: nomeCliente })).toBeVisible();
 });

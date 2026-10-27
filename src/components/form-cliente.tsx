@@ -50,6 +50,11 @@ export function FormCliente({ acao, inicial = {}, voltarPara }: Props) {
       />
       <Campo rotulo="E-mail" name="email" type="email" defaultValue={v.email} erros={e.email} />
       <Campo rotulo="CPF ou CNPJ" name="documento" defaultValue={v.documento} erros={e.documento} />
+      <Campo rotulo="Cidade" name="cidade" defaultValue={v.cidade} erros={e.cidade} />
+      <div className="grid grid-cols-2 gap-4">
+        <Campo rotulo="CEP" name="cep" inputMode="numeric" defaultValue={v.cep} erros={e.cep} placeholder="35500-000" />
+        <Campo rotulo="Nº" name="numero" defaultValue={v.numero} erros={e.numero} />
+      </div>
       <div className="sm:col-span-2">
         <AreaTexto rotulo="Observações" name="observacoes" defaultValue={v.observacoes} erros={e.observacoes} />
       </div>

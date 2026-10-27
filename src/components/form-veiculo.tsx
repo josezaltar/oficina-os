@@ -53,6 +53,13 @@ export function FormVeiculo({ acao, clientes, catalogo, inicial = {}, voltarPara
         inicial={{ marca: v.marca, modelo: v.modelo, ano: v.ano }}
         erros={e}
       />
+      <Campo
+        rotulo="Tipo"
+        name="tipo"
+        defaultValue={v.tipo}
+        erros={e.tipo}
+        placeholder="Ex.: Cavalo mecânico, Truck, Toco"
+      />
 
       <div className="flex flex-wrap items-center gap-3 sm:col-span-2">
         <BotaoEnviar>Salvar veículo</BotaoEnviar>
