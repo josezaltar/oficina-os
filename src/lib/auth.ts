@@ -1,6 +1,6 @@
 // Etapa 7 troca isto pela checagem de login de verdade.
 export async function exigirUsuario() {
-  return null;
+  return { id: null as number | null, nome: "", papel: "gerente" as const };
 }
 
 export async function exigirGerente(): Promise<
