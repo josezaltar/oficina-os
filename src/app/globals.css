@@ -1,10 +1,20 @@
 @import "tailwindcss";
 
+/*
+  Cores do sistema.
+  Decisão de design: o Oficina OS usa sempre o tema claro. É um sistema de
+  balcão, usado de dia, e o texto precisa ser legível em qualquer monitor.
+  Por isso o bloco `prefers-color-scheme: dark` do template foi removido.
+*/
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f8fafc; /* slate-50 */
+  --foreground: #0f172a; /* slate-900 */
 }
 
+/*
+  `@theme inline` cria classes do Tailwind a partir das variáveis acima:
+  `bg-background`, `text-foreground`, `font-sans`...
+*/
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -12,15 +22,24 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+/*
+  Estilos de impressão (etapa 8).
+  `@page` define a folha: A4 com margem de 12mm.
+  Tudo que tiver a classe `print:hidden` (do Tailwind) some no papel.
+*/
+@page {
+  size: A4;
+  margin: 12mm;
+}
+
+@media print {
+  body {
+    background: #fff;
+  }
 }
