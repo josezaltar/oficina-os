@@ -105,7 +105,7 @@ async function main() {
   const v = (i: number) => listaVeiculos[i].id;
 
   console.log("Criando ordens de serviço...");
-  type Item = Omit<typeof itensOs.$inferInsert, "ordemId">;
+  type Item = Omit<typeof itensOs.$inferInsert, "ordemId"> & { quantidade: number };
   const ordens: {
     veiculoId: number;
     status: schema.StatusOs;
