@@ -5,6 +5,7 @@ import { BotaoExcluir } from "@/components/botao-excluir";
 import { ControleStatus } from "@/components/controle-status";
 import { EditorItens } from "@/components/editor-itens";
 import { Cabecalho, Cartao, EtiquetaStatus, Tabela, classeBotao } from "@/components/ui";
+import { exigirUsuario } from "@/lib/auth";
 import { lerId } from "@/lib/dados/id";
 import { buscarOrdem } from "@/lib/dados/ordens";
 import {
@@ -27,6 +28,7 @@ export default async function OrdemPage({ params }: PageProps<"/ordens/[id]">) {
   const id = lerId((await params).id);
   const ordem = await buscarOrdem(id);
   if (!ordem) notFound();
+  const usuario = await exigirUsuario();
 
   const { veiculo } = ordem;
   const editavel = podeEditarItens(ordem.status);
@@ -46,7 +48,7 @@ export default async function OrdemPage({ params }: PageProps<"/ordens/[id]">) {
         <Link href={`/imprimir/os/${id}`} className={classeBotao.secundario}>
           Imprimir
         </Link>
-        {podeExcluirOs(ordem.status) && (
+        {usuario.papel === "gerente" && podeExcluirOs(ordem.status) && (
           <BotaoExcluir acao={excluirOrdem.bind(null, id)} rotulo="Excluir OS" />
         )}
       </Cabecalho>

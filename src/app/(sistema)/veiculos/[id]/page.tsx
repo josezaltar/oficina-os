@@ -10,6 +10,7 @@ import {
   Tabela,
   classeBotao,
 } from "@/components/ui";
+import { exigirUsuario } from "@/lib/auth";
 import { lerId } from "@/lib/dados/id";
 import { buscarVeiculo } from "@/lib/dados/veiculos";
 import {
@@ -26,6 +27,7 @@ export default async function VeiculoPage({ params }: PageProps<"/veiculos/[id]"
   const id = lerId((await params).id);
   const veiculo = await buscarVeiculo(id);
   if (!veiculo) notFound();
+  const usuario = await exigirUsuario();
 
   return (
     <div className="space-y-6">
@@ -47,7 +49,7 @@ export default async function VeiculoPage({ params }: PageProps<"/veiculos/[id]"
         <Link href={`/veiculos/${id}/editar`} className={classeBotao.secundario}>
           Editar
         </Link>
-        <BotaoExcluir acao={excluirVeiculo.bind(null, id)} />
+        {usuario.papel === "gerente" && <BotaoExcluir acao={excluirVeiculo.bind(null, id)} />}
       </Cabecalho>
 
       <Cartao titulo="Histórico de ordens de serviço">

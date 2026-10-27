@@ -10,6 +10,7 @@ import {
   classeBotao,
 } from "@/components/ui";
 import { buscarCliente } from "@/lib/dados/clientes";
+import { exigirUsuario } from "@/lib/auth";
 import { lerId } from "@/lib/dados/id";
 import { formatarData, formatarMoeda, formatarPlaca } from "@/lib/formato";
 import { excluirCliente } from "../acoes";
@@ -21,6 +22,7 @@ export default async function ClientePage({ params }: PageProps<"/clientes/[id]"
   const cliente = await buscarCliente(id);
   // notFound() mostra a página 404 se o id não existir no banco
   if (!cliente) notFound();
+  const usuario = await exigirUsuario();
 
   return (
     <div className="space-y-6">
@@ -28,7 +30,7 @@ export default async function ClientePage({ params }: PageProps<"/clientes/[id]"
         <Link href={`/clientes/${id}/editar`} className={classeBotao.secundario}>
           Editar
         </Link>
-        <BotaoExcluir acao={excluirCliente.bind(null, id)} />
+        {usuario.papel === "gerente" && <BotaoExcluir acao={excluirCliente.bind(null, id)} />}
       </Cabecalho>
 
       <Cartao titulo="Dados de contato">

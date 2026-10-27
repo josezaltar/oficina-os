@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { AreaUsuario } from "@/components/area-usuario";
 import { ListaMenu, MenuLateral } from "@/components/menu-lateral";
 
 /*
@@ -19,6 +20,10 @@ export default function SistemaLayout({ children }: LayoutProps<"/">) {
         </p>
         <Suspense fallback={<ListaMenu pathname="" />}>
           <MenuLateral />
+        </Suspense>
+        {/* Lê o cookie de login, então fica no seu próprio Suspense */}
+        <Suspense fallback={null}>
+          <AreaUsuario />
         </Suspense>
       </aside>
 
