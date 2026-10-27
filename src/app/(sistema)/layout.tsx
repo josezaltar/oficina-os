@@ -1,4 +1,5 @@
-import { MenuLateral } from "@/components/menu-lateral";
+import { Suspense } from "react";
+import { ListaMenu, MenuLateral } from "@/components/menu-lateral";
 
 /*
   Pastas entre parênteses, como (sistema), são "route groups":
@@ -16,7 +17,9 @@ export default function SistemaLayout({ children }: LayoutProps<"/">) {
         <p className="mb-4 px-3 text-lg font-bold tracking-tight">
           Oficina <span className="text-amber-400">OS</span>
         </p>
-        <MenuLateral />
+        <Suspense fallback={<ListaMenu pathname="" />}>
+          <MenuLateral />
+        </Suspense>
       </aside>
 
       {/* O conteúdo de cada página entra no lugar de {children} */}

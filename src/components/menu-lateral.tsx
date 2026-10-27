@@ -26,13 +26,22 @@ export function linkAtivo(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function MenuLateral({ extras = [] }: { extras?: typeof links }) {
+/*
+  `usePathname` só tem valor na hora do acesso (em /clientes/[id] o id muda
+  a cada visita). Com Cache Components, isso precisa ficar dentro de um
+  <Suspense>. Enquanto o valor não chega, o layout mostra <ListaMenu />
+  sem nenhum item destacado (veja (sistema)/layout.tsx).
+*/
+export function MenuLateral() {
   const pathname = usePathname();
+  return <ListaMenu pathname={pathname} />;
+}
 
+export function ListaMenu({ pathname }: { pathname: string }) {
   return (
     <nav aria-label="Menu principal">
       <ul className="flex gap-1 overflow-x-auto md:flex-col">
-        {[...links, ...extras].map((link) => {
+        {links.map((link) => {
           const ativo = linkAtivo(pathname, link.href);
           return (
             <li key={link.href}>
