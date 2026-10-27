@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -22,6 +22,12 @@ export const metadata: Metadata = {
     default: "Oficina OS",
   },
   description: "Sistema de gerenciamento de ordens de serviço",
+};
+
+// Gera <meta name="color-scheme" content="only light">: reforça para o
+// navegador que o site não tem modo escuro (veja o globals.css).
+export const viewport: Viewport = {
+  colorScheme: "only light",
 };
 
 // Layout RAIZ: é o único lugar com <html> e <body>. Tudo do site passa por

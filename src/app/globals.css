@@ -7,6 +7,13 @@
   Por isso o bloco `prefers-color-scheme: dark` do template foi removido.
 */
 :root {
+  /*
+    "only light" avisa o navegador que o site é SÓ claro. Sem isso, o modo
+    escuro automático de alguns navegadores (Edge, Chrome no Android)
+    escurece o fundo e clareia os textos por conta própria, deixando
+    texto claro em cartão branco.
+  */
+  color-scheme: only light;
   --background: #f8fafc; /* slate-50 */
   --foreground: #0f172a; /* slate-900 */
 }
