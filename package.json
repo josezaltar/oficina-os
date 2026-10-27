@@ -10,7 +10,10 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node --env-file=.env node_modules/drizzle-kit/bin.cjs migrate",
     "db:seed": "tsx --env-file=.env src/db/seed.ts",
-    "db:studio": "node --env-file=.env node_modules/drizzle-kit/bin.cjs studio"
+    "db:studio": "node --env-file=.env node_modules/drizzle-kit/bin.cjs studio",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
