@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { asc } from "drizzle-orm";
 import { FormUsuario } from "@/components/form-usuario";
 import { Cabecalho, Cartao, Tabela } from "@/components/ui";
@@ -47,15 +48,26 @@ export default async function UsuariosPage() {
             <th>E-mail</th>
             <th>Papel</th>
             <th className="hidden sm:table-cell">Desde</th>
+            <th>
+              <span className="sr-only">Ações</span>
+            </th>
           </tr>
         </thead>
         <tbody>
           {lista.map((u) => (
             <tr key={u.id}>
-              <td className="font-medium">{u.nome}</td>
+              <td className="font-medium">
+                {u.nome}
+                {u.id === usuario.id && <span className="ml-2 text-xs font-normal text-slate-500">(você)</span>}
+              </td>
               <td>{u.email}</td>
               <td className="capitalize">{u.papel}</td>
               <td className="hidden sm:table-cell">{formatarData(u.criadoEm)}</td>
+              <td className="text-right">
+                <Link href={`/usuarios/${u.id}/editar`} className="text-sm font-medium text-amber-700 hover:underline">
+                  Editar
+                </Link>
+              </td>
             </tr>
           ))}
         </tbody>

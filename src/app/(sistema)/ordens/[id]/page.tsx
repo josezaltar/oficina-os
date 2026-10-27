@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BotaoExcluir } from "@/components/botao-excluir";
+import { ControlePagamento } from "@/components/controle-pagamento";
 import { ControleStatus } from "@/components/controle-status";
 import { EditorItens } from "@/components/editor-itens";
 import { Cabecalho, Cartao, EtiquetaStatus, Tabela, classeBotao } from "@/components/ui";
@@ -14,9 +15,17 @@ import {
   formatarMoeda,
   formatarNumero,
   formatarPlaca,
+  hojeEmSaoPaulo,
 } from "@/lib/formato";
 import { podeEditarItens, podeExcluirOs, subtotalCentavos } from "@/lib/regras-os";
-import { excluirOrdem, mudarStatus, salvarItens } from "../acoes";
+import {
+  definirVencimentoOs,
+  desfazerPagamentoOs,
+  excluirOrdem,
+  marcarOsPaga,
+  mudarStatus,
+  salvarItens,
+} from "../acoes";
 
 export const metadata: Metadata = { title: "Ordem de serviço" };
 
@@ -34,6 +43,7 @@ export default async function OrdemPage({ params }: PageProps<"/ordens/[id]">) {
   const { veiculo } = ordem;
   const bloco = cabecalhoDaOrdem(ordem);
   const editavel = podeEditarItens(ordem.status);
+  const hoje = hojeEmSaoPaulo();
 
   return (
     <div className="space-y-6">
@@ -93,9 +103,21 @@ export default async function OrdemPage({ params }: PageProps<"/ordens/[id]">) {
         )}
       </Cartao>
 
-      <Cartao titulo="Status">
-        <ControleStatus status={ordem.status} acao={mudarStatus.bind(null, id)} />
-      </Cartao>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Cartao titulo="Status">
+          <ControleStatus status={ordem.status} acao={mudarStatus.bind(null, id)} />
+        </Cartao>
+        <Cartao titulo="Pagamento">
+          <ControlePagamento
+            hoje={hoje}
+            vencimento={ordem.pagamentoVencimento}
+            pagaEm={ordem.pagaEm}
+            definirVencimento={definirVencimentoOs.bind(null, id)}
+            marcarPaga={marcarOsPaga.bind(null, id)}
+            desfazer={desfazerPagamentoOs.bind(null, id)}
+          />
+        </Cartao>
+      </div>
 
       <Cartao titulo="Serviços">
         {editavel ? (

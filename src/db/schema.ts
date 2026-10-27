@@ -10,6 +10,7 @@
 */
 import { relations, sql } from "drizzle-orm";
 import {
+  date,
   integer,
   numeric,
   pgEnum,
@@ -152,6 +153,15 @@ export const ordensServico = pgTable("ordens_servico", {
   veiculoTipo: text("veiculo_tipo"),
   // Opcional: o bloco de papel não tem esse campo
   descricaoProblema: text("descricao_problema"),
+  /*
+    Pagamento da OS pelo cliente (controle de contas a receber).
+    `date` (só dia, sem hora) com mode "string": vem como "2026-10-27",
+    sem confusão de fuso horário.
+    - pagamentoVencimento: dia combinado para o cliente pagar (opcional)
+    - pagaEm: dia em que o cliente pagou; null = ainda não pagou
+  */
+  pagamentoVencimento: date("pagamento_vencimento", { mode: "string" }),
+  pagaEm: date("paga_em", { mode: "string" }),
   kmEntrada: integer("km_entrada"),
   observacoes: text("observacoes"),
   // Dinheiro em centavos (inteiro) para não ter erro de arredondamento.
@@ -160,6 +170,23 @@ export const ordensServico = pgTable("ordens_servico", {
     .notNull()
     .defaultNow(),
   entregueEm: timestamp("entregue_em", { withTimezone: true }),
+});
+
+/*
+  Contas a pagar da oficina: notas de fornecedor, água, luz, aluguel...
+  Quando é paga, `pagaEm` recebe a data e a conta sai da lista de pendentes
+  (e do alerta). O relatório usa `pagaEm` para saber em que mês saiu o dinheiro.
+*/
+export const contasPagar = pgTable("contas_pagar", {
+  id: id(),
+  descricao: text("descricao").notNull(),
+  fornecedor: text("fornecedor"),
+  categoria: text("categoria"), // ex.: PEÇAS, ÁGUA, LUZ, ALUGUEL
+  valorCentavos: integer("valor_centavos").notNull(),
+  vencimento: date("vencimento", { mode: "string" }).notNull(),
+  pagaEm: date("paga_em", { mode: "string" }),
+  observacoes: text("observacoes"),
+  criadoEm: criadoEm(),
 });
 
 export const itensOs = pgTable("itens_os", {

@@ -36,6 +36,13 @@
       "when": 1793120868637,
       "tag": "0004_tabela_de_servicos",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793132713409,
+      "tag": "0005_financeiro",
+      "breakpoints": true
     }
   ]
 }

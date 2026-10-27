@@ -5,12 +5,14 @@ import {
   Cabecalho,
   EstadoVazio,
   EtiquetaStatus,
+  EtiquetaVencimento,
   Tabela,
   classeBotao,
 } from "@/components/ui";
 import { primeiroValor } from "@/lib/dados/busca";
-import { lerStatus, listarOrdens } from "@/lib/dados/ordens";
-import { formatarData, formatarMoeda, formatarPlaca } from "@/lib/formato";
+import { connection } from "next/server";
+import { lerStatus, listarOrdens, type FiltroPagamento } from "@/lib/dados/ordens";
+import { formatarData, formatarMoeda, formatarPlaca, hojeEmSaoPaulo } from "@/lib/formato";
 import { FLUXO_STATUS, ROTULO_STATUS } from "@/lib/regras-os";
 
 export const metadata: Metadata = { title: "Ordens de serviço" };
@@ -19,16 +21,25 @@ export default async function OrdensPage({ searchParams }: PageProps<"/ordens">)
   const parametros = await searchParams;
   const busca = primeiroValor(parametros.busca);
   const status = lerStatus(primeiroValor(parametros.status));
-  const lista = await listarOrdens({ status, busca });
+  const pagamentoUrl = primeiroValor(parametros.pagamento);
+  const pagamento: FiltroPagamento | undefined =
+    pagamentoUrl === "a_receber" || pagamentoUrl === "pagas" ? pagamentoUrl : undefined;
+  const lista = await listarOrdens({ status, busca, pagamento });
+  await connection();
+  const hoje = hojeEmSaoPaulo();
 
-  // Monta o link de cada aba mantendo a busca atual
-  const linkFiltro = (s?: string) => {
+  // Monta o link de cada aba mantendo os outros filtros
+  const link = (mudancas: Record<string, string | undefined>) => {
     const p = new URLSearchParams();
-    if (s) p.set("status", s);
-    if (busca) p.set("busca", busca);
+    for (const [k, v] of Object.entries({ status, busca, pagamento, ...mudancas })) if (v) p.set(k, v);
     const qs = p.toString();
     return qs ? `/ordens?${qs}` : "/ordens";
   };
+  const linkFiltro = (s?: string) => link({ status: s });
+  const classeAba = (ativo: boolean) =>
+    `rounded-full px-3 py-1 text-sm font-medium ${
+      ativo ? "bg-slate-900 text-white" : "bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-100"
+    }`;
 
   return (
     <div>
@@ -59,11 +70,32 @@ export default async function OrdensPage({ searchParams }: PageProps<"/ordens">)
         })}
       </nav>
 
+      {/* Filtro de pagamento: quem já pagou e quem ainda deve */}
+      <nav aria-label="Filtrar por pagamento" className="mb-4 flex flex-wrap items-center gap-2">
+        <span className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Pagamento</span>
+        {(
+          [
+            [undefined, "Todas"],
+            ["a_receber", "A receber"],
+            ["pagas", "Pagas"],
+          ] as const
+        ).map(([valor, rotulo]) => (
+          <Link
+            key={rotulo}
+            href={link({ pagamento: valor })}
+            aria-current={valor === pagamento ? "page" : undefined}
+            className={classeAba(valor === pagamento)}
+          >
+            {rotulo}
+          </Link>
+        ))}
+      </nav>
+
       <FormBusca action="/ordens" valor={busca} placeholder="Nº da OS, placa ou cliente" />
 
       {lista.length === 0 ? (
         <EstadoVazio
-          acao={!busca && !status ? { href: "/ordens/nova", rotulo: "Abrir a primeira OS" } : undefined}
+          acao={!busca && !status && !pagamento ? { href: "/ordens/nova", rotulo: "Abrir a primeira OS" } : undefined}
         >
           Nenhuma ordem de serviço encontrada.
         </EstadoVazio>
@@ -76,6 +108,7 @@ export default async function OrdensPage({ searchParams }: PageProps<"/ordens">)
               <th>Veículo</th>
               <th className="hidden lg:table-cell">Cliente</th>
               <th>Status</th>
+              <th>Pagamento</th>
               <th className="text-right">Total</th>
             </tr>
           </thead>
@@ -95,6 +128,9 @@ export default async function OrdensPage({ searchParams }: PageProps<"/ordens">)
                 <td className="hidden lg:table-cell">{o.clienteNome}</td>
                 <td>
                   <EtiquetaStatus status={o.status} />
+                </td>
+                <td>
+                  <EtiquetaVencimento hoje={hoje} vencimento={o.pagamentoVencimento} pagaEm={o.pagaEm} />
                 </td>
                 <td className="text-right whitespace-nowrap">{formatarMoeda(o.totalCentavos)}</td>
               </tr>

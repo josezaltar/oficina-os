@@ -384,6 +384,26 @@ export function FormOrdem({
       {/* ------------------------------------------- itens do bloco */}
       <LinhasItens linhasVazias={3} erros={e} sugestoes={sugestoes.servicos} />
 
+      {/* Pagamento (opcional): quando o cliente vai pagar, ou se já pagou */}
+      <fieldset className="flex flex-wrap items-end gap-x-6 gap-y-3 rounded-lg border border-slate-200 bg-white p-4">
+        <legend className="px-1 text-[11px] font-semibold tracking-wide text-slate-600 uppercase">Pagamento</legend>
+        <label className="text-sm">
+          <span className="block font-medium text-slate-700">Vencimento</span>
+          <input
+            type="date"
+            name="pagamentoVencimento"
+            className="mt-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-amber-500 focus:ring-2 focus:ring-amber-500/30 focus:outline-none"
+          />
+        </label>
+        <label className="flex items-center gap-2 pb-2 text-sm font-medium text-slate-700">
+          <input type="checkbox" name="jaPago" value="sim" className="size-4 accent-amber-500" />
+          Já pago
+        </label>
+        <p className="w-full text-xs text-slate-500">
+          Pode deixar em branco e registrar depois, na página da OS.
+        </p>
+      </fieldset>
+
       <div className="flex flex-wrap items-center gap-3">
         <BotaoEnviar enviando="Abrindo...">Abrir ordem de serviço</BotaoEnviar>
         <Link href="/ordens" className={classeBotao.secundario}>

@@ -178,6 +178,47 @@ export const esquemaServico = z.object({
 
 export type DadosServico = z.infer<typeof esquemaServico>;
 
+// ------------------------------------------------------ contas a pagar
+
+const dataObrigatoria = (mensagem: string) => z.iso.date({ error: mensagem });
+
+// Data opcional de <input type="date">: "" vira null
+const dataOpcional = z
+  .string()
+  .trim()
+  .transform((v) => (v === "" ? null : v))
+  .pipe(z.iso.date({ error: "Data inválida." }).nullable());
+
+const valorObrigatorio = z
+  .string()
+  .trim()
+  .transform(lerMoedaEmCentavos)
+  .pipe(
+    z
+      .number({ error: "Valor inválido. Use o formato 1.234,56." })
+      .int()
+      .positive({ error: "O valor precisa ser maior que zero." })
+      .max(100_000_000, { error: "Valor muito alto." }),
+  );
+
+export const esquemaConta = z.object({
+  descricao: textoObrigatorio("Descreva a conta (ex.: Nota de peças, Conta de luz)."),
+  fornecedor: textoOpcional,
+  categoria: textoOpcional.transform((v) => (v ? v.toUpperCase() : null)),
+  valor: valorObrigatorio,
+  vencimento: dataObrigatoria("Informe o vencimento."),
+  pagaEm: dataOpcional,
+  observacoes: textoOpcional,
+});
+
+export type DadosConta = z.infer<typeof esquemaConta>;
+
+/** Pagamento da OS pelo cliente: vencimento combinado e/ou dia em que pagou. */
+export const esquemaPagamentoOs = z.object({
+  pagamentoVencimento: dataOpcional,
+  pagaEm: dataOpcional,
+});
+
 export const esquemaItens = z
   .array(esquemaItem)
   .max(100, { error: "Máximo de 100 itens por OS." });
@@ -200,4 +241,11 @@ export const esquemaNovoUsuario = z.object({
   ),
   senha: z.string().min(8, { error: "A senha precisa ter 8 caracteres ou mais." }),
   papel: z.enum(["gerente", "atendente"], { error: "Escolha o papel." }),
+});
+
+/** Editar usuário: igual ao novo, mas a senha é opcional (vazia = não muda). */
+export const esquemaEditarUsuario = esquemaNovoUsuario.extend({
+  senha: z
+    .string()
+    .refine((s) => s === "" || s.length >= 8, { error: "A senha precisa ter 8 caracteres ou mais." }),
 });

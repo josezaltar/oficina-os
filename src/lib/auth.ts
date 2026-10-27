@@ -91,3 +91,14 @@ export async function exigirGerente(): Promise<
   }
   return { ok: true, usuario };
 }
+
+/**
+ * Para consultas do financeiro (contas a pagar, relatório): só gerente.
+ * As páginas já mostram "Acesso restrito" para atendente; esta checagem é
+ * a garantia final, perto dos dados.
+ */
+export async function exigirFinanceiro(): Promise<Usuario> {
+  const usuario = await exigirUsuario();
+  if (usuario.papel !== "gerente") redirect("/");
+  return usuario;
+}

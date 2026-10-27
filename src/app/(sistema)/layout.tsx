@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { AlertaVencimentos } from "@/components/alerta-vencimentos";
 import { AreaUsuario } from "@/components/area-usuario";
 import { ListaMenu, MenuLateral } from "@/components/menu-lateral";
 
@@ -28,7 +29,13 @@ export default function SistemaLayout({ children }: LayoutProps<"/">) {
       </aside>
 
       {/* O conteúdo de cada página entra no lugar de {children} */}
-      <main className="flex-1 p-4 md:p-8">{children}</main>
+      <main className="flex-1 p-4 md:p-8">
+        {/* Alerta de contas vencendo (só gerente): aparece em todas as páginas */}
+        <Suspense fallback={null}>
+          <AlertaVencimentos />
+        </Suspense>
+        {children}
+      </main>
     </div>
   );
 }

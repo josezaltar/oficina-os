@@ -38,11 +38,31 @@ export function MenuLateral() {
   return <ListaMenu pathname={pathname} />;
 }
 
-export function ListaMenu({ pathname }: { pathname: string }) {
+/** Links só do gerente (financeiro e usuários), com o mesmo destaque do menu. */
+const linksGerente = [
+  { href: "/contas", rotulo: "Contas a pagar" },
+  { href: "/relatorio", rotulo: "Relatório" },
+  { href: "/usuarios", rotulo: "Usuários" },
+];
+
+export function MenuGerente() {
+  const pathname = usePathname();
+  return <ListaMenu pathname={pathname} itens={linksGerente} rotulo="Menu do gerente" />;
+}
+
+export function ListaMenu({
+  pathname,
+  itens = links,
+  rotulo = "Menu principal",
+}: {
+  pathname: string;
+  itens?: { href: string; rotulo: string }[];
+  rotulo?: string;
+}) {
   return (
-    <nav aria-label="Menu principal">
+    <nav aria-label={rotulo}>
       <ul className="flex gap-1 overflow-x-auto md:flex-col">
-        {links.map((link) => {
+        {itens.map((link) => {
           const ativo = linkAtivo(pathname, link.href);
           return (
             <li key={link.href}>

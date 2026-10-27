@@ -25,7 +25,13 @@ import {
   podeExcluirOs,
   podeMudarStatus,
 } from "@/lib/regras-os";
-import { REGEX_PLACA, esquemaItens, esquemaOrdem, type DadosItem } from "@/lib/validacao";
+import {
+  REGEX_PLACA,
+  esquemaItens,
+  esquemaOrdem,
+  esquemaPagamentoOs,
+  type DadosItem,
+} from "@/lib/validacao";
 
 /** Erro de regra de negócio: a mensagem pode ser mostrada para a pessoa. */
 class ErroRegra extends Error {}
@@ -87,6 +93,14 @@ export async function criarOrdem(
 
   const b = cabecalho.data;
 
+  // Pagamento informado no bloco (opcional): vencimento e/ou "já pago"
+  const pagamento = esquemaPagamentoOs.safeParse({
+    pagamentoVencimento: String(formData.get("pagamentoVencimento") ?? ""),
+    pagaEm: "",
+  });
+  const pagamentoVencimento = pagamento.success ? pagamento.data.pagamentoVencimento : null;
+  const pagaEm = formData.get("jaPago") === "sim" ? b.data : null; // pago no dia da OS
+
   const id = await db.transaction(async (tx) => {
     let [veiculo] = await tx
       .select({ id: veiculos.id })
@@ -119,6 +133,8 @@ export async function criarOrdem(
         veiculoModelo: b.modelo,
         veiculoTipo: b.tipoVeiculo,
         totalCentavos: calcularTotalCentavos(itens.data),
+        pagamentoVencimento,
+        pagaEm,
       })
       .returning({ id: ordensServico.id });
 
@@ -324,4 +340,50 @@ export async function excluirOrdem(
 
   revalidarOrdem(id);
   redirect("/ordens");
+}
+
+// ---------------------------------------------------- pagamento da OS
+
+/*
+  Controle de recebimento: quando o cliente vai pagar (vencimento) e quando
+  pagou. Qualquer usuário pode registrar (o atendente recebe no balcão).
+  O relatório financeiro soma as OS ENTREGUES e PAGAS, pela data do pagamento.
+*/
+function revalidarPagamento(id: number) {
+  revalidatePath(`/ordens/${id}`);
+  revalidatePath("/", "layout"); // alerta do topo, lista, painel e relatório
+}
+
+/** Salva o vencimento (dia combinado para o cliente pagar). */
+export async function definirVencimentoOs(id: number, formData: FormData) {
+  await exigirUsuario();
+  const resultado = esquemaPagamentoOs.safeParse({
+    pagamentoVencimento: String(formData.get("pagamentoVencimento") ?? ""),
+    pagaEm: "",
+  });
+  if (!resultado.success) return;
+  await db
+    .update(ordensServico)
+    .set({ pagamentoVencimento: resultado.data.pagamentoVencimento })
+    .where(eq(ordensServico.id, id));
+  revalidarPagamento(id);
+}
+
+/** Marca a OS como paga (no dia informado, ou hoje). */
+export async function marcarOsPaga(id: number, formData: FormData) {
+  await exigirUsuario();
+  const resultado = esquemaPagamentoOs.safeParse({
+    pagamentoVencimento: "",
+    pagaEm: String(formData.get("pagaEm") ?? ""),
+  });
+  const dia = (resultado.success && resultado.data.pagaEm) || hojeEmSaoPaulo();
+  await db.update(ordensServico).set({ pagaEm: dia }).where(eq(ordensServico.id, id));
+  revalidarPagamento(id);
+}
+
+/** Desfaz o pagamento marcado por engano. */
+export async function desfazerPagamentoOs(id: number) {
+  await exigirUsuario();
+  await db.update(ordensServico).set({ pagaEm: null }).where(eq(ordensServico.id, id));
+  revalidarPagamento(id);
 }

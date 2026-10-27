@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, desc, eq, ilike, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, isNotNull, isNull, or, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
 import {
   clientes,
@@ -18,11 +18,19 @@ export function lerStatus(texto?: string): StatusOs | undefined {
   return statusOsEnum.enumValues.find((s) => s === texto);
 }
 
-export async function listarOrdens(filtro: { status?: StatusOs; busca?: string }) {
+export type FiltroPagamento = "a_receber" | "pagas";
+
+export async function listarOrdens(filtro: {
+  status?: StatusOs;
+  busca?: string;
+  pagamento?: FiltroPagamento;
+}) {
   await exigirUsuario();
 
   const condicoes: SQL[] = [];
   if (filtro.status) condicoes.push(eq(ordensServico.status, filtro.status));
+  if (filtro.pagamento === "a_receber") condicoes.push(isNull(ordensServico.pagaEm));
+  if (filtro.pagamento === "pagas") condicoes.push(isNotNull(ordensServico.pagaEm));
 
   const busca = filtro.busca?.trim();
   if (busca) {
@@ -45,6 +53,8 @@ export async function listarOrdens(filtro: { status?: StatusOs; busca?: string }
       descricaoProblema: ordensServico.descricaoProblema,
       totalCentavos: ordensServico.totalCentavos,
       abertaEm: ordensServico.abertaEm,
+      pagamentoVencimento: ordensServico.pagamentoVencimento,
+      pagaEm: ordensServico.pagaEm,
       // coalesce: o que foi escrito na OS; se for uma OS antiga, o cadastro
       placa: sql<string>`coalesce(${ordensServico.veiculoPlaca}, ${veiculos.placa})`,
       veiculo: sql<string>`coalesce(${ordensServico.veiculoMarca}, ${veiculos.marca}) || ' ' || coalesce(${ordensServico.veiculoModelo}, ${veiculos.modelo})`,
@@ -54,7 +64,12 @@ export async function listarOrdens(filtro: { status?: StatusOs; busca?: string }
     .innerJoin(veiculos, eq(veiculos.id, ordensServico.veiculoId))
     .innerJoin(clientes, eq(clientes.id, veiculos.clienteId))
     .where(and(...condicoes))
-    .orderBy(desc(ordensServico.abertaEm))
+    // "A receber": quem vence primeiro no topo (sem vencimento no fim)
+    .orderBy(
+      ...(filtro.pagamento === "a_receber"
+        ? [sql`${ordensServico.pagamentoVencimento} asc nulls last`, desc(ordensServico.abertaEm)]
+        : [desc(ordensServico.abertaEm)]),
+    )
     .limit(100);
 }
 

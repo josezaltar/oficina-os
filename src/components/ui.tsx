@@ -7,6 +7,7 @@ import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
 import type { StatusOs } from "@/db/schema";
 import { ROTULO_STATUS } from "@/lib/regras-os";
+import { situacaoVencimento, textoVencimento, type SituacaoVencimento } from "@/lib/financeiro";
 
 export const classeBotao = {
   primario:
@@ -236,5 +237,34 @@ export function Esqueleto({ linhas = 5 }: { linhas?: number }) {
         <div key={i} className="h-10 rounded-md bg-slate-200" />
       ))}
     </div>
+  );
+}
+
+const corVencimento: Record<SituacaoVencimento, string> = {
+  paga: "bg-green-100 text-green-800",
+  vencida: "bg-red-100 text-red-800",
+  vence_hoje: "bg-red-100 text-red-800",
+  vence_logo: "bg-amber-100 text-amber-900",
+  em_dia: "bg-slate-100 text-slate-700",
+  sem_data: "bg-slate-100 text-slate-500",
+};
+
+/** Etiqueta de vencimento: "Vence amanhã" (amarela), "Vencida há 3 dias" (vermelha)... */
+export function EtiquetaVencimento({
+  hoje,
+  vencimento,
+  pagaEm,
+}: {
+  hoje: string;
+  vencimento: string | null;
+  pagaEm: string | null;
+}) {
+  const situacao = situacaoVencimento(hoje, vencimento, pagaEm);
+  return (
+    <span
+      className={`inline-block whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold ${corVencimento[situacao]}`}
+    >
+      {textoVencimento(hoje, vencimento, pagaEm)}
+    </span>
   );
 }
